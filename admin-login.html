@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin kirish - TDShU</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo .logo-circle {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 15px;
+            font-size: 28px;
+        }
+
+        .login-logo h2 {
+            color: var(--primary-blue);
+            font-size: 24px;
+        }
+
+        .login-logo p {
+            color: var(--dark-gray);
+            margin-top: 5px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--dark-gray);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 14px 14px 45px;
+            border: 2px solid var(--gray);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--dark-gray);
+        }
+
+        .back-link a {
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        .credentials-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #0d47a1;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-logo">
+            <div class="logo-circle">TDShU</div>
+            <h2>Admin Panel</h2>
+            <p>Tizimga kirish</p>
+        </div>
+
+        <div class="credentials-info">
+            <strong><i class="fas fa-info-circle"></i> Test kirish ma'lumotlari:</strong><br>
+            Login: <strong>admin</strong><br>
+            Parol: <strong>admin123</strong>
+        </div>
+
+        <form onsubmit="loginAdmin(event)">
+            <div class="input-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="username" placeholder="Foydalanuvchi nomi" required>
+            </div>
+
+            <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input type="password" id="password" placeholder="Parol" required>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-sign-in-alt"></i> Kirish
+            </button>
+        </form>
+
+        <div class="back-link">
+            <a href="index.html"><i class="fas fa-arrow-left"></i> Saytga qaytish</a>
+        </div>
+    </div>
+
+    <script>
+        function loginAdmin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'admin' && password === 'admin123') {
+                localStorage.setItem('adminLoggedIn', 'true');
+                localStorage.setItem('adminUsername', username);
+                window.location.href = 'admin.html';
+            } else {
+                alert('❌ Login yoki parol noto\'g\'ri!\n\nLogin: admin\nParol: admin123');
+            }
+        }
+
+        // Agar oldindan login qilingan bo'lsa, to'g'ridan admin panelga
+        if (localStorage.getItem('adminLoggedIn') === 'true') {
+            window.location.href = 'admin.html';
+        }
+    </script>
+</body>
+</html>
