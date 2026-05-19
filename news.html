@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yangiliklar - TDShU</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .news-source-tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        .news-source-tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: var(--light-gray);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            color: var(--text-dark);
+        }
+        .news-source-tab.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+        .news-source-tab:hover {
+            background: var(--gray);
+        }
+        .news-source-tab.active:hover {
+            background: var(--dark-blue);
+        }
+
+        .news-list-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+        }
+
+        .news-loading, .news-error-box {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--dark-gray);
+            grid-column: 1 / -1;
+        }
+        .news-loading i, .news-error-box i {
+            font-size: 50px;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .news-error-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #856404;
+            text-align: left;
+            padding: 20px 24px;
+        }
+        .news-error-box i { display: inline; margin-right: 8px; font-size: 18px; }
+
+        .news-link-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+        .news-link-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+        .news-link-card .news-image {
+            height: 180px;
+            overflow: hidden;
+            background: var(--light-gray);
+            position: relative;
+        }
+        .news-link-card .news-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+        .news-link-card:hover .news-image img {
+            transform: scale(1.1);
+        }
+        .news-image-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--gray);
+            font-size: 60px;
+        }
+        .news-link-card .news-content {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .news-link-card .news-source {
+            font-size: 11px;
+            color: var(--accent-blue);
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .news-link-card h3 {
+            color: var(--primary-blue);
+            margin-bottom: 10px;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+        .news-link-card p {
+            color: var(--dark-gray);
+            font-size: 13px;
+            flex: 1;
+            line-height: 1.6;
+            margin-bottom: 14px;
+        }
+        .news-link-card .news-meta {
+            font-size: 12px;
+            color: var(--dark-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid var(--gray);
+        }
+        .news-link-card .read-arrow {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        @media (max-width: 992px) { .news-list-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .news-list-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="container top-bar-content">
+            <div class="logo-section">
+                <img src="https://tsuos.uz/wp-content/uploads/2025/04/TDSHU-Recovered-5p.png" alt="TDShU logo" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="logo-text">
+                    Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi
+                </div>
+            </div>
+            <div class="contact-info">
+                <div class="phone-icon"><i class="fas fa-phone"></i></div>
+                <div class="phone-details">
+                    <h4>ISHONCH TELEFONI</h4>
+                    <p>+998 71 233 34 24</p>
+                </div>
+            </div>
+            <div class="language-flags">
+                <img src="https://flagcdn.com/w40/uz.png" alt="O'zbek" class="flag">
+                <img src="https://flagcdn.com/w40/ru.png" alt="Русский" class="flag">
+                <img src="https://flagcdn.com/w40/gb.png" alt="English" class="flag">
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav class="main-nav">
+        <div class="container nav-container">
+            <ul class="nav-menu">
+                <li><a href="index.html">BOSH SAHIFA</a></li>
+                <li><a href="about.html">OLIY MAKTAB</a></li>
+                <li><a href="faculties.html">TA'LIM YO'NALISHLARI</a></li>
+                <li><a href="teachers.html">O'QITUVCHILAR</a></li>
+                <li><a href="articles.html">MAQOLALAR</a></li>
+                <li><a href="news.html" class="active">YANGILIKLAR</a></li>
+                <li><a href="gallery.html">GALEREYA</a></li>
+                <li><a href="faq.html">SAVOLLAR</a></li>
+                <li><a href="contact.html">ALOQA</a></li>
+            </ul>
+            <div class="search-icon"><i class="fas fa-search"></i></div>
+        </div>
+    </nav>
+
+    <!-- PAGE HEADER -->
+    <section class="hero" style="height: 350px;">
+        <div class="hero-slide" style="background-image: url('images/background.jpg');">
+            <div class="hero-content">
+                <h1>Yangiliklar</h1>
+                <p>O'zbekistondagi yetakchi OAV'lardan avtomatik tarzda yig'iladi</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- NEWS -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title">
+                <h2>So'nggi yangiliklar</h2>
+                <p>Gazeta.uz va UZA.uz (O'zbekiston Milliy axborot agentligi) saytlaridan RSS orqali avtomatik yig'iladi</p>
+            </div>
+
+            <div class="news-source-tabs">
+                <button class="news-source-tab active" onclick="loadNews('all', this)">
+                    <i class="fas fa-globe"></i> Hammasi
+                </button>
+                <button class="news-source-tab" onclick="loadNews('gazetauz', this)">
+                    <i class="fas fa-newspaper"></i> Gazeta.uz
+                </button>
+                <button class="news-source-tab" onclick="loadNews('uzauz', this)">
+                    <i class="fas fa-landmark"></i> UZA.uz
+                </button>
+            </div>
+
+            <div class="news-list-grid" id="newsList">
+                <div class="news-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Yangiliklar yuklanmoqda...</p>
+                </div>
+            </div>
+
+            <p style="text-align: center; color: var(--dark-gray); margin-top: 30px; font-size: 13px;">
+                <i class="fas fa-sync-alt" style="color: var(--accent-blue);"></i>
+                Yangiliklar har 5 daqiqada avtomatik yangilanadi.
+                <span id="lastRefresh"></span>
+            </p>
+            <p style="text-align: center; color: var(--dark-gray); margin-top: 6px; font-size: 12px;">
+                <i class="fas fa-info-circle"></i>
+                To'liq versiya manba saytida ochiladi. Yuklash uchun internet aloqasi kerak.
+            </p>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>Oliy maktab haqida</h4>
+                    <p>Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi — Toshkent davlat sharqshunoslik universiteti tarkibidagi tarjimon, tilshunos va xalqaro jurnalist tayyorlash markazi.</p>
+                    <div class="social-links">
+                        <a href="https://t.me/tsuos" class="social-link telegram" target="_blank"><i class="fab fa-telegram"></i></a>
+                        <a href="https://www.youtube.com/@tsuosuz" class="social-link youtube" target="_blank"><i class="fab fa-youtube"></i></a>
+                        <a href="#" class="social-link instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link facebook" target="_blank"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Tezkor havolalar</h4>
+                    <ul>
+                        <li><a href="index.html">Bosh sahifa</a></li>
+                        <li><a href="about.html">Oliy maktab</a></li>
+                        <li><a href="faculties.html">Ta'lim yo'nalishlari</a></li>
+                        <li><a href="teachers.html">O'qituvchilar</a></li>
+                        <li><a href="articles.html">Maqolalar</a></li>
+                        <li><a href="news.html">Yangiliklar</a></li>
+                        <li><a href="gallery.html">Galereya</a></li>
+                        <li><a href="contact.html">Aloqa</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Talabalarga</h4>
+                    <ul>
+                        <li><a href="#">Qabul</a></li>
+                        <li><a href="#">Stipendiya</a></li>
+                        <li><a href="#">Kutubxona</a></li>
+                        <li><a href="submit-article.html">Maqola yuborish</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Bog'lanish</h4>
+                    <p><i class="fas fa-map-marker-alt"></i> Toshkent, Amir Temur ko'chasi, 20</p>
+                    <p><i class="fas fa-phone"></i> +998 94 613 46 43</p>
+                    <p><i class="fas fa-envelope"></i> info@tsuos.uz</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi. Barcha huquqlar himoyalangan.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const NEWS_SOURCES = {
+            gazetauz: { name: 'Gazeta.uz', url: 'https://www.gazeta.uz/oz/rss/' },
+            uzauz:    { name: 'UZA.uz',    url: 'https://uza.uz/uz/rss' }
+        };
+
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html || '';
+            return (tmp.textContent || tmp.innerText || '').trim();
+        }
+
+        function extractImage(html) {
+            if (!html) return '';
+            const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+            return m ? m[1] : '';
+        }
+
+        function formatDate(d) {
+            try {
+                return new Date(d).toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric' });
+            } catch (e) {
+                return d || '';
+            }
+        }
+
+        async function fetchFeed(srcKey) {
+            const src = NEWS_SOURCES[srcKey];
+            try {
+                const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(src.url));
+                const data = await res.json();
+                if (data.status !== 'ok') throw new Error(data.message || 'RSS yuklanmadi');
+                return data.items.map(item => ({
+                    title: item.title,
+                    description: stripHtml(item.description || '').slice(0, 160),
+                    link: item.link,
+                    pubDate: item.pubDate,
+                    pubDateStr: formatDate(item.pubDate),
+                    thumbnail: item.thumbnail || (item.enclosure && item.enclosure.link) || extractImage(item.description) || '',
+                    source: src.name
+                }));
+            } catch (e) {
+                console.error('Feed error:', src.name, e);
+                return [];
+            }
+        }
+
+        let currentSource = 'all';
+        let refreshTimer = null;
+
+        async function loadNews(source, btn) {
+            // Faol manbani saqlash (avto-yangilash uchun)
+            if (source) currentSource = source;
+            document.querySelectorAll('.news-source-tab').forEach(t => t.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const target = document.getElementById('newsList');
+            target.innerHTML = `
+                <div class="news-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Yangiliklar yuklanmoqda...</p>
+                </div>`;
+
+            let items = [];
+            if (source === 'all' || !source) {
+                const results = await Promise.all(Object.keys(NEWS_SOURCES).map(fetchFeed));
+                results.forEach(arr => items.push(...arr));
+                items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+                items = items.slice(0, 30);
+            } else {
+                items = await fetchFeed(source);
+                items = items.slice(0, 24);
+            }
+
+            if (!items.length) {
+                target.innerHTML = `
+                    <div class="news-error-box">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Yangiliklar yuklab bo'lmadi.</strong>
+                        Internet aloqasini tekshiring yoki keyinroq urinib ko'ring.
+                        Manba sayti vaqtincha ishlamayotgan bo'lishi mumkin.
+                    </div>`;
+                return;
+            }
+
+            // Oxirgi yangilanish vaqtini ko'rsatish
+            const refreshEl = document.getElementById('lastRefresh');
+            if (refreshEl) {
+                const t = new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+                refreshEl.textContent = ' Oxirgi yangilanish: ' + t;
+            }
+
+            target.innerHTML = items.map(item => `
+                <a href="${item.link}" target="_blank" rel="noopener" class="news-link-card">
+                    <div class="news-image">
+                        ${item.thumbnail
+                            ? `<img src="${item.thumbnail}" alt="" onerror="this.parentNode.innerHTML='<div class=\\'news-image-placeholder\\'><i class=\\'fas fa-newspaper\\'></i></div>'">`
+                            : `<div class="news-image-placeholder"><i class="fas fa-newspaper"></i></div>`
+                        }
+                    </div>
+                    <div class="news-content">
+                        <span class="news-source">${item.source}</span>
+                        <h3>${item.title}</h3>
+                        <p>${item.description}</p>
+                        <div class="news-meta">
+                            <span><i class="far fa-calendar"></i> ${item.pubDateStr}</span>
+                            <span class="read-arrow">O'qish <i class="fas fa-arrow-right"></i></span>
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        // Sahifa ochilganda barcha manbalardan yangiliklar yuklansin
+        loadNews('all', document.querySelector('.news-source-tab.active'));
+
+        // Har 5 daqiqada avtomatik yangilash
+        function startAutoRefresh() {
+            if (refreshTimer) clearInterval(refreshTimer);
+            refreshTimer = setInterval(() => {
+                // Faqat brauzer tab faol bo'lganda yangilaymiz (foydalanuvchi sahifada)
+                if (!document.hidden) {
+                    const activeBtn = document.querySelector('.news-source-tab.active');
+                    loadNews(currentSource, activeBtn);
+                }
+            }, 5 * 60 * 1000); // 5 daqiqa
+        }
+
+        // Sahifaga qaytganda zudlik bilan yangilash (5 daq dan ortiq vaqt o'tgan bo'lsa)
+        let lastLoadTime = Date.now();
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && (Date.now() - lastLoadTime) > 5 * 60 * 1000) {
+                const activeBtn = document.querySelector('.news-source-tab.active');
+                loadNews(currentSource, activeBtn);
+                lastLoadTime = Date.now();
+            }
+        });
+
+        startAutoRefresh();
+    </script>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ===== Konfiguratsiya =====
+.env
+.env.local
+.env.production
+
+# ===== Backend ma'lumotlari (foydalanuvchi ma'lumotlari git'ga kirmasin) =====
+backend/data/
+backend/uploads/
+
+# ===== Node =====
+node_modules/
+package-lock.json
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+.history/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Backup va vaqtinchalik =====
+*.bak
+*.tmp
+~$*
+
+# ===== Migratsiyadan oldingi eski papka =====
+/tarjimashunoslik_site/

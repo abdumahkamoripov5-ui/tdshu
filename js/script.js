@@ -22,6 +22,14 @@ function getField(form, name) {
     return el ? (el.value || '').trim() : '';
 }
 
+// Backend manzili — mahalliy va production'ni avtomatik aniqlaydi
+// Production: backend deploy qilingandan keyin pastdagi URL'ni o'zgartiring
+window.TDSHU_API = window.TDSHU_API || (
+    /localhost|127\.0\.0\.1/.test(location.hostname)
+        ? 'http://localhost:5000'
+        : 'https://tdshu-backend.onrender.com'  // <-- Render'dagi backend URL'ingizni shu yerga yozing
+);
+
 // MAQOLA YUBORISH FORMASI (IndexedDB orqali — katta fayllarni qo'llab-quvvatlaydi)
 async function submitArticle(event) {
     event.preventDefault();
@@ -119,38 +127,70 @@ async function submitArticle(event) {
     }
 }
 
-// ALOQA FORMASI (IndexedDB orqali)
+// ALOQA FORMASI — Backend + IndexedDB fallback
 async function submitContact(event) {
     event.preventDefault();
     const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    const payload = {
+        id: Date.now(),
+        name: getField(form, 'name'),
+        phone: getField(form, 'phone'),
+        email: getField(form, 'email'),
+        type: getField(form, 'type'),
+        subject: getField(form, 'subject'),
+        message: getField(form, 'message'),
+        date: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
+        status: 'pending'
+    };
 
     try {
-        if (!window.tdshuDB) {
-            alert('❌ Ma\'lumotlar bazasi ulanmagan (db.js yuklanmagan).');
-            return;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
         }
 
-        await window.tdshuDB.saveContact({
-            id: Date.now(),
-            name: getField(form, 'name'),
-            phone: getField(form, 'phone'),
-            email: getField(form, 'email'),
-            type: getField(form, 'type'),
-            subject: getField(form, 'subject'),
-            message: getField(form, 'message'),
-            date: new Date().toISOString().split('T')[0],
-            createdAt: new Date().toISOString(),
-            status: 'pending'
-        });
+        // 1) Backend'ga yuborishga urinish (email yuborish uchun)
+        let backendOk = false;
+        let emailSent = false;
+        try {
+            const res = await fetch(window.TDSHU_API + '/api/contacts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                const data = await res.json();
+                backendOk = true;
+                emailSent = !!data.email_sent;
+            }
+        } catch (e) {
+            console.warn('Backend mavjud emas, mahalliy saqlash:', e.message);
+        }
 
-        alert('✅ Murojaatingiz qabul qilindi!\n\n' +
-              'Sizning xabaringiz universitet ma\'muriyatiga yuborildi.\n' +
-              '24 soat ichida sizga javob beriladi.');
+        // 2) Mahalliy bazaga ham saqlash (backend o'chirilgan bo'lsa ham yo'qolmasin)
+        if (window.tdshuDB) {
+            try { await window.tdshuDB.saveContact(payload); } catch (e) {}
+        }
+
+        const msg = backendOk
+            ? (emailSent
+                ? '✅ Murojaatingiz qabul qilindi va emailga yuborildi!\n\n24 soat ichida sizga javob beriladi.'
+                : '✅ Murojaatingiz qabul qilindi!\n\nServerga yuborildi. 24 soat ichida javob beriladi.')
+            : '✅ Murojaatingiz qabul qilindi!\n\n(Backend mavjud emasligi sababli vaqtincha mahalliy saqlandi.)';
+        alert(msg);
 
         form.reset();
     } catch (err) {
         console.error(err);
         alert('❌ Xato yuz berdi: ' + (err.message || err));
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Yuborish';
+        }
     }
 }
 
@@ -354,15 +394,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// SEARCH ICON
-document.querySelectorAll('.search-icon').forEach(icon => {
-    icon.addEventListener('click', function() {
-        const query = prompt('Qidirayotgan ma\'lumotingizni kiriting:');
-        if (query) {
-            alert(`Qidiruv: "${query}"\n\n(Qidiruv tizimi keyinroq qo'shiladi.)`);
-        }
-    });
-});
+// SEARCH ICON — search.js orqali boshqariladi
 
 // Tasdiqlangan maqolalarni yuklash
 loadApprovedArticles();

@@ -6,6 +6,162 @@
     <title>Ta'lim yo'nalishlari - TDShU</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Yo'nalish kartochkalari uchun yangi elementlar */
+        .card-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .card-badge {
+            background: var(--accent-blue);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .card-extras {
+            font-size: 14px;
+            color: var(--text-dark);
+            line-height: 1.6;
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: var(--light-gray);
+            border-radius: 6px;
+        }
+        .card-extras strong {
+            color: var(--primary-blue);
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+        .card-extras strong i {
+            color: var(--accent-blue);
+            margin-right: 6px;
+        }
+
+        /* Til kartochkalarini bosish mumkin qilish */
+        .lang-card {
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .lang-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Til modal oynasi */
+        .lang-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 1000;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+        .lang-modal-overlay.show { display: flex; }
+        .lang-modal {
+            background: white;
+            border-radius: 14px;
+            max-width: 720px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: langModalIn 0.25s ease;
+            overflow: hidden;
+        }
+        @keyframes langModalIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .lang-modal-header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
+            color: white;
+            padding: 24px 28px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+        .lang-modal-icon {
+            width: 64px;
+            height: 64px;
+            min-width: 64px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+        }
+        .lang-modal-header h2 {
+            color: white;
+            font-size: 24px;
+            margin: 0;
+            flex: 1;
+        }
+        .lang-modal-close {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .lang-modal-close:hover { background: rgba(255, 255, 255, 0.3); }
+        .lang-modal-body { padding: 26px 28px; }
+        .lang-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--gray);
+            align-items: start;
+        }
+        .lang-row-label {
+            font-weight: 600;
+            color: var(--primary-blue);
+            font-size: 14px;
+        }
+        .lang-row-label i {
+            color: var(--accent-blue);
+            margin-right: 6px;
+        }
+        .lang-row span:last-child { color: var(--text-dark); font-size: 14px; line-height: 1.6; }
+        .lang-block {
+            margin-top: 22px;
+            padding-top: 20px;
+            border-top: 2px solid var(--gray);
+        }
+        .lang-block:first-of-type { border-top: none; padding-top: 8px; margin-top: 14px; }
+        .lang-block h4 {
+            color: var(--primary-blue);
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .lang-block h4 i {
+            color: var(--accent-blue);
+            margin-right: 6px;
+        }
+        .lang-block p {
+            color: var(--text-dark);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+        @media (max-width: 600px) {
+            .lang-row { grid-template-columns: 1fr; gap: 4px; }
+            .lang-modal-header h2 { font-size: 20px; }
+        }
+    </style>
 </head>
 <body>
 
@@ -42,6 +198,9 @@
                 <li><a href="faculties.html" class="active">TA'LIM YO'NALISHLARI</a></li>
                 <li><a href="teachers.html">O'QITUVCHILAR</a></li>
                 <li><a href="articles.html">MAQOLALAR</a></li>
+                <li><a href="news.html">YANGILIKLAR</a></li>
+                <li><a href="gallery.html">GALEREYA</a></li>
+                <li><a href="faq.html">SAVOLLAR</a></li>
                 <li><a href="contact.html">ALOQA</a></li>
             </ul>
             <div class="search-icon"><i class="fas fa-search"></i></div>
@@ -73,9 +232,19 @@
                             <i class="fas fa-language"></i>
                         </div>
                         <h3>Tarjima nazariyasi va amaliyoti</h3>
-                        <p><strong>Kod:</strong> 60230200 (sharq tillari bo'yicha)</p>
-                        <p><strong>Bosqich:</strong> Bakalavriat</p>
-                        <p>Yozma va og'zaki tarjima ko'nikmalarini chuqur egallash, sharq tillaridan o'zbek va boshqa tillarga professional tarjima.</p>
+                        <div class="card-badges">
+                            <span class="card-badge">Bakalavriat</span>
+                            <span class="card-badge">4 yil</span>
+                        </div>
+                        <p>Talabalar sharq tillaridan o'zbek va boshqa tillarga ilmiy, badiiy, ishbilarmon va ommaviy axborot matnlarini malakali tarjima qilishni o'rganadi. Yozma va og'zaki tarjima ko'nikmalari chuqur egallaniladi, qiyosiy tilshunoslik va madaniyatlararo muloqot asoslari shakllantiriladi.</p>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-book"></i> Asosiy fanlar</strong>
+                            Tarjima nazariyasi, qiyosiy tilshunoslik, leksikografiya, madaniyatlararo muloqot, ikkinchi xorijiy til, mintaqashunoslik.
+                        </div>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-briefcase"></i> Karyera imkoniyatlari</strong>
+                            Tarjimon, muharrir, lingvist, xalqaro tashkilotlar mutaxassisi, diplomatik xizmat xodimi, lug'atshunos.
+                        </div>
                     </div>
                 </div>
 
@@ -85,9 +254,19 @@
                             <i class="fas fa-newspaper"></i>
                         </div>
                         <h3>Jurnalistika: Xalqaro jurnalistika</h3>
-                        <p><strong>Kod:</strong> 60320100 (sharq tillari bo'yicha)</p>
-                        <p><strong>Bosqich:</strong> Bakalavriat</p>
-                        <p>Xalqaro media, jurnalistika va ommaviy kommunikatsiyalar sohasi mutaxassislari tayyorlash.</p>
+                        <div class="card-badges">
+                            <span class="card-badge">Bakalavriat</span>
+                            <span class="card-badge">4 yil</span>
+                        </div>
+                        <p>Talabalar reportaj, intervyu, tahliliy maqola yozish, raqamli media va xalqaro yangiliklarni sharq tillarida tahlil qilishni o'rganadi. Xalqaro media va ommaviy kommunikatsiyalar sohasi mutaxassislari tayyorlanadi.</p>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-book"></i> Asosiy fanlar</strong>
+                            Xalqaro jurnalistika asoslari, media-etika, axborot xavfsizligi, xalqaro munosabatlar, raqamli media, mediadiskurs tahlili.
+                        </div>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-briefcase"></i> Karyera imkoniyatlari</strong>
+                            Xalqaro jurnalist, telejurnalist, korrespondent, media-tahlilchi, redaktor, press-attashe.
+                        </div>
                     </div>
                 </div>
 
@@ -97,9 +276,19 @@
                             <i class="fas fa-route"></i>
                         </div>
                         <h3>Yo'lboshchi va talqin faoliyati</h3>
-                        <p><strong>Kod:</strong> 61010500 (sharq tillari bo'yicha)</p>
-                        <p><strong>Bosqich:</strong> Bakalavriat</p>
-                        <p>Gid-tarjimon, ekskursovod va madaniyatlararo muloqot mutaxassisligi.</p>
+                        <div class="card-badges">
+                            <span class="card-badge">Bakalavriat</span>
+                            <span class="card-badge">4 yil</span>
+                        </div>
+                        <p>Gid-tarjimon, ekskursovod va madaniyatlararo muloqot mutaxassisligi. Talabalar mintaqa tarixi, madaniyati, urf-odatlari hamda zamonaviy turistik xizmatlar bo'yicha chuqur bilim oladi.</p>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-book"></i> Asosiy fanlar</strong>
+                            Sharq mamlakatlari tarixi, ekskursiya nazariyasi, turizm asoslari, etiket va xizmat ko'rsatish madaniyati, og'zaki tarjima.
+                        </div>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-briefcase"></i> Karyera imkoniyatlari</strong>
+                            Xalqaro gid, ekskursovod, turizm menejeri, madaniyatshunos, til-madaniyat maslahatchisi, turoperator.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -121,9 +310,19 @@
                             <i class="fas fa-book-open"></i>
                         </div>
                         <h3>Qiyosiy tilshunoslik, lingvistik talqin</h3>
-                        <p><strong>Kod:</strong> 70230201 (sharq tillari bo'yicha)</p>
-                        <p><strong>Bosqich:</strong> Magistratura</p>
-                        <p>Tilshunoslik sohasida chuqur ilmiy tadqiqotlar va qiyosiy lingvistik tahlil.</p>
+                        <div class="card-badges">
+                            <span class="card-badge">Magistratura</span>
+                            <span class="card-badge">2 yil</span>
+                        </div>
+                        <p>Magistrantlar bir nechta sharq tillarini qiyoslab o'rganadi — tillarning grammatik tuzilishi, fonetikasi va leksikasi xususiyatlarini tahlil qiladi. Tilshunoslik sohasida chuqur ilmiy tadqiqot olib boriladi va dissertatsiya tayyorlanadi.</p>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-book"></i> Asosiy yo'nalishlar</strong>
+                            Korpus tilshunosligi, sotsiolingvistika, kompyuter lingvistikasi, etimologiya, dialektologiya, psixolingvistika.
+                        </div>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-briefcase"></i> Karyera imkoniyatlari</strong>
+                            Tilshunos-olim, lingvistik tahlilchi, ilmiy xodim, oliy maktab o'qituvchisi, lug'atshunos, terminolog.
+                        </div>
                     </div>
                 </div>
 
@@ -133,9 +332,19 @@
                             <i class="fas fa-headphones"></i>
                         </div>
                         <h3>Sinxron tarjima</h3>
-                        <p><strong>Kod:</strong> 70230202 (sharq tillari bo'yicha)</p>
-                        <p><strong>Bosqich:</strong> Magistratura</p>
-                        <p>Sinxron va ketma-ket tarjima bo'yicha yuqori darajadagi professional malaka.</p>
+                        <div class="card-badges">
+                            <span class="card-badge">Magistratura</span>
+                            <span class="card-badge">2 yil</span>
+                        </div>
+                        <p>Maxsus jihozlangan tarjima kabinalarida amaliy mashg'ulotlar olib boriladi. Sinxron va ketma-ket tarjima bo'yicha yuqori darajadagi professional malaka, kasbiy etika va tezkor tarjima ko'nikmalari shakllantiriladi.</p>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-book"></i> Asosiy fanlar</strong>
+                            Sinxron tarjima texnikasi, ketma-ket tarjima, tarjimon etikasi, og'zaki nutq texnikasi, terminologiya, diplomatik protokol.
+                        </div>
+                        <div class="card-extras">
+                            <strong><i class="fas fa-briefcase"></i> Karyera imkoniyatlari</strong>
+                            Sinxronchi-tarjimon, xalqaro konferensiya tarjimoni, diplomatik tarjimon, OAV jonli efir tarjimoni.
+                        </div>
                     </div>
                 </div>
 
@@ -144,7 +353,11 @@
                         <i class="fas fa-flask"></i>
                     </div>
                     <h3>Doktorantura (PhD)</h3>
-                    <p>Tilshunoslik, tarjimashunoslik va media kommunikatsiyalar yo'nalishlarida ilmiy darajalar.</p>
+                    <div class="card-badges" style="justify-content: center;">
+                        <span class="card-badge">Ilmiy daraja</span>
+                        <span class="card-badge">3 yil</span>
+                    </div>
+                    <p>Tilshunoslik, tarjimashunoslik va media kommunikatsiyalar yo'nalishlarida ilmiy darajalar. Tadqiqotchilar mustaqil ilmiy izlanish, dissertatsiya yozish va xalqaro nashrlarda chop etish ko'nikmalariga ega bo'ladi.</p>
                 </div>
             </div>
         </div>
@@ -159,19 +372,24 @@
             </div>
 
             <div class="stats">
-                <div class="stat-card"><h3><i class="fas fa-mosque"></i></h3><p>Arab tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-feather"></i></h3><p>Fors tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-star-and-crescent"></i></h3><p>Turk tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-om"></i></h3><p>Hind tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-pen-nib"></i></h3><p>Urdu tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-scroll"></i></h3><p>Dariy tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-dragon"></i></h3><p>Xitoy tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-torii-gate"></i></h3><p>Yapon tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-yin-yang"></i></h3><p>Koreys tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-globe-asia"></i></h3><p>Indonez tili</p></div>
-                <div class="stat-card"><h3><i class="fas fa-leaf"></i></h3><p>Malay tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('arab')"><h3><i class="fas fa-mosque"></i></h3><p>Arab tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('fors')"><h3><i class="fas fa-feather"></i></h3><p>Fors tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('turk')"><h3><i class="fas fa-star-and-crescent"></i></h3><p>Turk tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('hind')"><h3><i class="fas fa-om"></i></h3><p>Hind tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('urdu')"><h3><i class="fas fa-pen-nib"></i></h3><p>Urdu tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('dariy')"><h3><i class="fas fa-scroll"></i></h3><p>Dariy tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('xitoy')"><h3><i class="fas fa-dragon"></i></h3><p>Xitoy tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('yapon')"><h3><i class="fas fa-torii-gate"></i></h3><p>Yapon tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('koreys')"><h3><i class="fas fa-yin-yang"></i></h3><p>Koreys tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('indonez')"><h3><i class="fas fa-globe-asia"></i></h3><p>Indonez tili</p></div>
+                <div class="stat-card lang-card" onclick="openLangModal('malay')"><h3><i class="fas fa-leaf"></i></h3><p>Malay tili</p></div>
                 <div class="stat-card"><h3>11</h3><p>Jami tillar</p></div>
             </div>
+
+            <p style="text-align: center; color: var(--dark-gray); margin-top: 25px; font-size: 14px;">
+                <i class="fas fa-info-circle" style="color: var(--accent-blue);"></i>
+                Har bir tilni bosing va batafsil ma'lumot oling
+            </p>
         </div>
     </section>
 
@@ -222,8 +440,189 @@
         </div>
     </footer>
 
+    <!-- TIL HAQIDA MODAL -->
+    <div id="langModalOverlay" class="lang-modal-overlay" onclick="if(event.target===this)closeLangModal()">
+        <div class="lang-modal">
+            <div class="lang-modal-header">
+                <div class="lang-modal-icon" id="langModalIcon"></div>
+                <h2 id="langModalTitle">—</h2>
+                <button class="lang-modal-close" onclick="closeLangModal()" aria-label="Yopish">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="lang-modal-body">
+                <div class="lang-row">
+                    <span class="lang-row-label"><i class="fas fa-sitemap"></i> Til oilasi</span>
+                    <span id="langModalFamily"></span>
+                </div>
+                <div class="lang-row">
+                    <span class="lang-row-label"><i class="fas fa-globe"></i> Asosiy hududlar</span>
+                    <span id="langModalCountries"></span>
+                </div>
+                <div class="lang-row">
+                    <span class="lang-row-label"><i class="fas fa-users"></i> So'zlovchilar</span>
+                    <span id="langModalSpeakers"></span>
+                </div>
+                <div class="lang-row">
+                    <span class="lang-row-label"><i class="fas fa-font"></i> Yozuv</span>
+                    <span id="langModalScript"></span>
+                </div>
+
+                <div class="lang-block">
+                    <h4><i class="fas fa-info-circle"></i> Til haqida</h4>
+                    <p id="langModalHistory"></p>
+                </div>
+                <div class="lang-block">
+                    <h4><i class="fas fa-university"></i> TDShUda o'qitilishi</h4>
+                    <p id="langModalAtSchool"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Til ma'lumotlari
+        const LANGS = {
+            arab: {
+                name: "Arab tili",
+                icon: "fas fa-mosque",
+                family: "Semit tillari (Afro-Osiyo guruhi)",
+                countries: "Saudiya Arabistoni, Misr, Marokash, Iroq, BAA va 22 dan ortiq mamlakat",
+                speakers: "400 million dan ortiq",
+                script: "Arab yozuvi (o'ngdan chapga, 28 ta harf)",
+                history: "Birlashgan Millatlar Tashkilotining 6 ta rasmiy tilidan biri. Islom dini muqaddas kitobi — Qur'on tili. Klassik adabiy arab tili va zamonaviy adabiy arab tili (MSA) o'qitiladi. O'zbek leksikasiga katta ta'sir ko'rsatgan: kitob, ilm, maktab kabi minglab so'zlar arabchadan kelgan.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan, TDShU universiteti tarkibida esa universitet faoliyatining boshidan (1991-yildan) beri faol o'qitilib kelinmoqda. Eng asosiy va eng ko'p talabalar o'qiydigan tillardan biri."
+            },
+            fors: {
+                name: "Fors tili",
+                icon: "fas fa-feather",
+                family: "Hind-Yevropa tillari, Eron guruhi",
+                countries: "Eron, Afg'oniston (Dariy nomi bilan), Tojikiston (Tojik tili)",
+                speakers: "110 million dan ortiq",
+                script: "Arab-fors yozuvi (32 harf)",
+                history: "Klassik sharq adabiyotining (Hofiz, Sa'diy, Firdavsiy, Umar Xayyom, Rumiy) tili. O'zbek tili va madaniyatiga juda katta ta'sir ko'rsatgan — minglab fors-tojik so'zlari o'zbek tilida bor. Eronning rasmiy tili.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan, TDShUda esa universitet ochilganidan boshlab o'qitilmoqda. Mintaqa madaniyatiga yaqinligi sababli alohida e'tibor beriladi."
+            },
+            turk: {
+                name: "Turk tili",
+                icon: "fas fa-star-and-crescent",
+                family: "Turkiy tillar (Oltoy oilasi, O'g'uz guruhi)",
+                countries: "Turkiya Respublikasi, Shimoliy Kipr",
+                speakers: "85 million atrofida",
+                script: "Lotin alifbosi (1928-yildan beri)",
+                history: "O'zbek tiliga eng yaqin tillardan biri — ikkalasi ham turkiy tillar oilasiga mansub. NATO a'zosi va Yevropa Ittifoqi nomzodi davlat tili. Turk teleseriallari va madaniyati orqali O'zbekistonda keng tarqalgan.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan, TDShU universitetida ko'p yillardan beri o'qitilmoqda. Turkiya bilan keng ta'lim va madaniy hamkorlik mavjud."
+            },
+            hind: {
+                name: "Hind tili",
+                icon: "fas fa-om",
+                family: "Hind-oryan tillari (Hind-Yevropa oilasi)",
+                countries: "Hindiston Respublikasi (rasmiy til)",
+                speakers: "600 million dan ortiq",
+                script: "Devanagari yozuvi",
+                history: "Hindiston Respublikasining 22 rasmiy tilidan biri va eng keng tarqalgani. Bolivud kinosanoati, sanskrit-hind klassik adabiyoti, qadimiy Veda yodgorliklari tili. Boy va qadimiy adabiy meros.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan, TDShUda esa Lal Bahadur Shastri hind madaniyat markazi bilan hamkorlikda muvaffaqiyatli o'qitilmoqda."
+            },
+            urdu: {
+                name: "Urdu tili",
+                icon: "fas fa-pen-nib",
+                family: "Hind-oryan tillari (Hind-Yevropa oilasi)",
+                countries: "Pokiston (davlat tili), Hindiston (rasmiy til)",
+                speakers: "230 million dan ortiq",
+                script: "Arab-fors yozuvi (nastaliq uslubida)",
+                history: "Pokiston Islom Respublikasining davlat tili. Hind tili bilan grammatik o'xshashlikka ega, lekin lug'at jihatidan arab va fors tillaridan boyitilgan. Boy mumtoz she'riyat an'anasi (Iqbol, G'olib).",
+                atSchool: "Oliy maktab tarkibida 2024-yildan, TDShUda Pokiston bilan ta'lim hamkorligi doirasida o'qitilmoqda."
+            },
+            dariy: {
+                name: "Dariy tili",
+                icon: "fas fa-scroll",
+                family: "Hind-Yevropa tillari, Eron guruhi (fors tili varianti)",
+                countries: "Afg'oniston Islom Respublikasi",
+                speakers: "12 million atrofida (Afg'oniston aholisining ~50%)",
+                script: "Arab-fors yozuvi",
+                history: "Afg'onistonning ikki rasmiy tilidan biri (pushtu bilan birga). Klassik fors tilining zamonaviy shevasi. Mintaqa siyosati, savdo va madaniy aloqalari uchun muhim ahamiyatga ega.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan o'qitiladi. Afg'oniston bilan chegaradosh mamlakat sifatida bu tilning amaliy ahamiyati katta."
+            },
+            xitoy: {
+                name: "Xitoy tili",
+                icon: "fas fa-dragon",
+                family: "Xitoy-Tibet tillari oilasi",
+                countries: "Xitoy Xalq Respublikasi, Tayvan, Singapur, Malayziya (xitoy diasporasi)",
+                speakers: "1.3 milliarddan ortiq (dunyodagi eng ko'p so'zlovchi til)",
+                script: "Iyeroglif yozuv (50 000+ belgilar, kundalik foydalanish uchun 3000-5000)",
+                history: "BMTning 6 ta rasmiy tilidan biri. Dunyoda eng ko'p so'zlovchilarga ega til. 5000 yillik yozma adabiy meros. Putonghua (standart mandarin) o'qitiladi.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan, TDShUda ko'p yillardan beri o'qitiladi. Xitoyning yetakchi universitetlari bilan keng hamkorlik mavjud, talabalar Konfutsiy institutlari orqali stipendiyalar yutib oladi."
+            },
+            yapon: {
+                name: "Yapon tili",
+                icon: "fas fa-torii-gate",
+                family: "Yapon tillari (alohida oila)",
+                countries: "Yaponiya",
+                speakers: "125 million atrofida",
+                script: "Uchta yozuv tizimi: hiragana, katakana va kanji (xitoy iyerogliflari)",
+                history: "Yaponiyaning yagona rasmiy tili. Texnologiya, anime va manga madaniyati orqali butun dunyoda mashhur. Murakkab xushmuomalalik tizimi (keigo) mavjud.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan, TDShUda ko'p yillardan beri o'qitilmoqda. Yaponiyaning Mitsubishi Corporation stipendiyasi va boshqa grantlar orqali talabalar Yaponiyada amaliyot o'tashadi."
+            },
+            koreys: {
+                name: "Koreys tili",
+                icon: "fas fa-yin-yang",
+                family: "Koreys tillari (alohida oila)",
+                countries: "Janubiy Koreya, Shimoliy Koreya",
+                speakers: "77 million atrofida",
+                script: "Hangul alifbosi (1443-yilda Qiroli Sejong tomonidan yaratilgan)",
+                history: "K-pop, K-drama, K-beauty va Koreya iqtisodiyoti orqali so'nggi yillarda butun dunyo qiziqayotgan til. Hangul yozuvi mantiqiy tuzilgan va o'rganish uchun qulay deb hisoblanadi.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan, TDShUda Koreya Respublikasi madaniyat markazi va Sejong instituti bilan hamkorlikda o'qitilmoqda."
+            },
+            indonez: {
+                name: "Indonez tili",
+                icon: "fas fa-globe-asia",
+                family: "Avstrones tillari (Malay-polines guruhi)",
+                countries: "Indoneziya Respublikasi",
+                speakers: "270 million atrofida",
+                script: "Lotin alifbosi",
+                history: "Indoneziyaning davlat tili — Bahasa Indonesia. Malay tilining standartlashtirilgan shakli. Indoneziya dunyodagi eng yirik musulmon davlati va Janubi-Sharqiy Osiyodagi yirik iqtisodiyot.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan o'qitiladi. Indoneziya bilan ta'lim hamkorligi rivojlanmoqda, talabalar grantlar orqali Indoneziyada o'qish imkoniyatiga ega."
+            },
+            malay: {
+                name: "Malay tili",
+                icon: "fas fa-leaf",
+                family: "Avstrones tillari (Malay-polines guruhi)",
+                countries: "Malayziya, Bruney, Singapur, Indoneziya bilan o'zaro tushuniladi",
+                speakers: "290 million dan ortiq (Indonez bilan birga)",
+                script: "Lotin alifbosi (Jawi yozuvi an'anaviy)",
+                history: "Malayziyaning davlat tili — Bahasa Melayu. Indonez tili bilan o'zaro tushuniladi (90% lug'at umumiy). Malayziya tezkor rivojlanayotgan ASEAN davlati.",
+                atSchool: "Oliy maktab tarkibida 2024-yildan o'qitiladi. Malayziya universitetlari bilan ta'lim almashinuv dasturlari mavjud."
+            }
+        };
+
+        function openLangModal(key) {
+            const L = LANGS[key];
+            if (!L) return;
+            document.getElementById('langModalIcon').innerHTML = '<i class="' + L.icon + '"></i>';
+            document.getElementById('langModalTitle').textContent = L.name;
+            document.getElementById('langModalFamily').textContent = L.family;
+            document.getElementById('langModalCountries').textContent = L.countries;
+            document.getElementById('langModalSpeakers').textContent = L.speakers;
+            document.getElementById('langModalScript').textContent = L.script;
+            document.getElementById('langModalHistory').textContent = L.history;
+            document.getElementById('langModalAtSchool').textContent = L.atSchool;
+            document.getElementById('langModalOverlay').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLangModal() {
+            document.getElementById('langModalOverlay').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeLangModal();
+        });
+    </script>
+
     <script src="js/i18n.js"></script>
     <script src="js/db.js"></script>
+    <script src="js/search.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html>

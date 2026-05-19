@@ -212,6 +212,10 @@ ul {
     justify-content: center;
 }
 
+.hero-slide {
+    filter: contrast(1.12) saturate(1.25);
+}
+
 .hero-slide::before {
     content: '';
     position: absolute;
@@ -219,7 +223,7 @@ ul {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, rgba(13, 50, 99, 0.08), rgba(30, 77, 139, 0.06));
+    background: transparent;
 }
 
 .hero-content {
@@ -1113,6 +1117,172 @@ footer {
 .flag.lang-active {
     outline: 2px solid var(--accent-blue);
     outline-offset: 1px;
+}
+
+/* ===== SITE SEARCH MODAL ===== */
+.site-search-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1100;
+    padding: 70px 20px 20px;
+    align-items: flex-start;
+    justify-content: center;
+}
+.site-search-overlay.show { display: flex; }
+
+.site-search-box {
+    background: white;
+    border-radius: 14px;
+    max-width: 700px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    animation: searchIn 0.2s ease;
+}
+@keyframes searchIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.site-search-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--gray);
+}
+.site-search-header > i {
+    color: var(--accent-blue);
+    font-size: 18px;
+}
+.site-search-header input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 17px;
+    padding: 8px 0;
+    color: var(--text-dark);
+    font-family: inherit;
+    background: transparent;
+}
+
+.site-search-kbd, .site-search-results kbd {
+    background: var(--light-gray);
+    border: 1px solid var(--gray);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: var(--dark-gray);
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.site-search-results {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.search-results-count {
+    padding: 10px 22px;
+    font-size: 12px;
+    color: var(--dark-gray);
+    background: var(--light-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 600;
+}
+
+.search-hint {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--dark-gray);
+}
+.search-hint i {
+    font-size: 42px;
+    color: var(--gray);
+    margin-bottom: 15px;
+    display: block;
+}
+.search-hint p {
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.search-result {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--gray);
+    cursor: pointer;
+    transition: background 0.15s;
+    color: inherit;
+    text-decoration: none;
+}
+.search-result:hover {
+    background: var(--light-gray);
+}
+.search-result-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--light-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-blue);
+    flex-shrink: 0;
+    font-size: 16px;
+}
+.search-result-info {
+    flex: 1;
+    min-width: 0;
+}
+.search-result-title {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 15px;
+    margin-bottom: 2px;
+}
+.search-result-sub {
+    font-size: 13px;
+    color: var(--dark-gray);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.search-result-type {
+    background: var(--accent-blue);
+    color: white;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+}
+
+/* ===== GLOBAL RASM TINIQLIGI ===== */
+/* Barcha mazmun rasmlariga kontrast va to'yintirish qo'llaniladi */
+.about-image img,
+.faculty-image img,
+.teacher-image img,
+.gallery-item img,
+.news-image img,
+.photo-card img,
+.article-card .teacher-photo img,
+.news-link-card .news-image img {
+    filter: contrast(1.08) saturate(1.18) brightness(1.02);
+    image-rendering: -webkit-optimize-contrast;
+}
+
+/* Logo va bayroqcha rasmlariga ta'sir qilmasin */
+.logo-section img,
+.flag,
+.author-photo img {
+    filter: none !important;
 }
 
 /* ===== ANIMATIONS ===== */

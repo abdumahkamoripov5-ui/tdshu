@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savol-javob (FAQ) - TDShU</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .faq-search {
+            max-width: 600px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+        .faq-search input {
+            width: 100%;
+            padding: 14px 20px 14px 50px;
+            border: 2px solid var(--gray);
+            border-radius: 30px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .faq-search input:focus { border-color: var(--accent-blue); }
+        .faq-search i {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-blue);
+            font-size: 17px;
+        }
+
+        .faq-category-tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 36px;
+        }
+        .faq-cat-tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: var(--light-gray);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            color: var(--text-dark);
+        }
+        .faq-cat-tab.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+        .faq-cat-tab:hover { background: var(--gray); }
+        .faq-cat-tab.active:hover { background: var(--dark-blue); }
+
+        .faq-list {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .faq-item {
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 14px;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .faq-item:hover { box-shadow: var(--shadow-hover); }
+        .faq-question {
+            padding: 20px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: var(--primary-blue);
+            font-size: 16px;
+            user-select: none;
+            gap: 16px;
+        }
+        .faq-question:hover { background: var(--light-gray); }
+        .faq-icon {
+            color: var(--accent-blue);
+            transition: transform 0.25s;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .faq-item.open .faq-icon { transform: rotate(45deg); }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, padding 0.25s;
+            padding: 0 24px;
+        }
+        .faq-item.open .faq-answer {
+            max-height: 600px;
+            padding: 0 24px 22px;
+        }
+        .faq-answer p {
+            line-height: 1.75;
+            color: var(--text-dark);
+            font-size: 15px;
+        }
+
+        .faq-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--dark-gray);
+        }
+        .faq-empty i {
+            font-size: 50px;
+            color: var(--gray);
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .faq-cta {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            background: var(--light-gray);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="container top-bar-content">
+            <div class="logo-section">
+                <img src="https://tsuos.uz/wp-content/uploads/2025/04/TDSHU-Recovered-5p.png" alt="TDShU logo" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="logo-text">
+                    Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi
+                </div>
+            </div>
+            <div class="contact-info">
+                <div class="phone-icon"><i class="fas fa-phone"></i></div>
+                <div class="phone-details">
+                    <h4>ISHONCH TELEFONI</h4>
+                    <p>+998 71 233 34 24</p>
+                </div>
+            </div>
+            <div class="language-flags">
+                <img src="https://flagcdn.com/w40/uz.png" alt="O'zbek" class="flag">
+                <img src="https://flagcdn.com/w40/ru.png" alt="Русский" class="flag">
+                <img src="https://flagcdn.com/w40/gb.png" alt="English" class="flag">
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav class="main-nav">
+        <div class="container nav-container">
+            <ul class="nav-menu">
+                <li><a href="index.html">BOSH SAHIFA</a></li>
+                <li><a href="about.html">OLIY MAKTAB</a></li>
+                <li><a href="faculties.html">TA'LIM YO'NALISHLARI</a></li>
+                <li><a href="teachers.html">O'QITUVCHILAR</a></li>
+                <li><a href="articles.html">MAQOLALAR</a></li>
+                <li><a href="news.html">YANGILIKLAR</a></li>
+                <li><a href="gallery.html">GALEREYA</a></li>
+                <li><a href="faq.html" class="active">SAVOLLAR</a></li>
+                <li><a href="contact.html">ALOQA</a></li>
+            </ul>
+            <div class="search-icon"><i class="fas fa-search"></i></div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero" style="height: 350px;">
+        <div class="hero-slide" style="background-image: url('images/background.jpg');">
+            <div class="hero-content">
+                <h1>Tez-tez beriladigan savollar</h1>
+                <p>Abituriyentlar va talabalar uchun foydali ma'lumotlar</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Savol-javob</h2>
+                <p>Eng ko'p so'raladigan savollarga aniq javoblar</p>
+            </div>
+
+            <div class="faq-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="faqSearchInput" placeholder="Savolni qidirish...">
+            </div>
+
+            <div class="faq-category-tabs">
+                <button class="faq-cat-tab active" onclick="filterFAQ('all', this)"><i class="fas fa-list"></i> Hammasi</button>
+                <button class="faq-cat-tab" onclick="filterFAQ('admission', this)"><i class="fas fa-door-open"></i> Qabul</button>
+                <button class="faq-cat-tab" onclick="filterFAQ('education', this)"><i class="fas fa-graduation-cap"></i> Ta'lim</button>
+                <button class="faq-cat-tab" onclick="filterFAQ('international', this)"><i class="fas fa-globe"></i> Xalqaro</button>
+                <button class="faq-cat-tab" onclick="filterFAQ('other', this)"><i class="fas fa-circle-question"></i> Boshqa</button>
+            </div>
+
+            <div class="faq-list" id="faqList"></div>
+
+            <div class="faq-cta">
+                <h3 style="color: var(--primary-blue); margin-bottom: 12px;">Savolingiz ro'yxatda yo'qmi?</h3>
+                <p style="margin-bottom: 20px; color: var(--dark-gray);">Aloqa formasi orqali bizga to'g'ridan-to'g'ri murojaat qiling — 24 soat ichida javob beriladi.</p>
+                <a href="contact.html" class="btn"><i class="fas fa-paper-plane"></i> Savol berish</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>Oliy maktab haqida</h4>
+                    <p>Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi — Toshkent davlat sharqshunoslik universiteti tarkibidagi tarjimon, tilshunos va xalqaro jurnalist tayyorlash markazi.</p>
+                    <div class="social-links">
+                        <a href="https://t.me/tsuos" class="social-link telegram" target="_blank"><i class="fab fa-telegram"></i></a>
+                        <a href="https://www.youtube.com/@tsuosuz" class="social-link youtube" target="_blank"><i class="fab fa-youtube"></i></a>
+                        <a href="#" class="social-link instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link facebook" target="_blank"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Tezkor havolalar</h4>
+                    <ul>
+                        <li><a href="index.html">Bosh sahifa</a></li>
+                        <li><a href="about.html">Oliy maktab</a></li>
+                        <li><a href="faculties.html">Ta'lim yo'nalishlari</a></li>
+                        <li><a href="teachers.html">O'qituvchilar</a></li>
+                        <li><a href="articles.html">Maqolalar</a></li>
+                        <li><a href="news.html">Yangiliklar</a></li>
+                        <li><a href="gallery.html">Galereya</a></li>
+                        <li><a href="faq.html">Savollar</a></li>
+                        <li><a href="contact.html">Aloqa</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Talabalarga</h4>
+                    <ul>
+                        <li><a href="faq.html">Savol-javob (FAQ)</a></li>
+                        <li><a href="#">Qabul</a></li>
+                        <li><a href="#">Stipendiya</a></li>
+                        <li><a href="#">Kutubxona</a></li>
+                        <li><a href="submit-article.html">Maqola yuborish</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Bog'lanish</h4>
+                    <p><i class="fas fa-map-marker-alt"></i> Toshkent, Amir Temur ko'chasi, 20</p>
+                    <p><i class="fas fa-phone"></i> +998 94 613 46 43</p>
+                    <p><i class="fas fa-envelope"></i> info@tsuos.uz</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi. Barcha huquqlar himoyalangan.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const FAQS = [
+            // Qabul
+            { cat: 'admission', q: 'Oliy maktabga qanday kirish mumkin?', a: 'Bakalavriatga kirish uchun Davlat test markazi (DTM) testlari topshiriladi. Talabalar davlat granti yoki shartnoma asosida o\'qishi mumkin. Asosiy chet til (sharq tili) bo\'yicha qo\'shimcha test bo\'lishi mumkin.' },
+            { cat: 'admission', q: 'Magistraturaga qabul shartlari qanday?', a: 'Bakalavr diplomiga ega bo\'lgan abituriyentlar mutaxassislik fanidan imtihon topshiradi. Qiyosiy tilshunoslik yoki Sinxron tarjima yo\'nalishlariga kirish uchun til bilimi darajasi tekshiriladi.' },
+            { cat: 'admission', q: 'Qabul qachon boshlanadi?', a: 'Bakalavriat qabuli har yili iyun-iyul oylarida, magistratura qabuli iyul-avgust oylarida o\'tkaziladi. Aniq sanalar DTM va TDShU rasmiy saytlarida e\'lon qilinadi.' },
+            { cat: 'admission', q: 'Qabul uchun qanday hujjatlar kerak?', a: 'Pasport (asl va nusxa), attestat yoki diplom (asl va nusxa), 6 dona 3×4 o\'lchamdagi rasm, 086-tibbiy ma\'lumotnoma, DTM tushum kvitansiyasi, shaxsiy arizada to\'ldirilgan forma.' },
+            { cat: 'admission', q: 'Sirtqi yoki kechki ta\'lim shakli mavjudmi?', a: 'Hozirgi paytda oliy maktabning barcha yo\'nalishlari faqat kunduzgi (offline) shaklda o\'qitiladi.' },
+            { cat: 'admission', q: 'Bitta yo\'nalishga necha kishi qabul qilinadi?', a: 'Har yili qabul kvotalari Vazirlar Mahkamasi qarori bilan belgilanadi. Aniq raqamlar har yilning bahor oylarida e\'lon qilinadi.' },
+
+            // Ta'lim
+            { cat: 'education', q: 'Qanday tillar o\'qitiladi?', a: 'Oliy maktabda 11 ta sharq tili o\'qitiladi: arab, fors, turk, hind, urdu, dariy, xitoy, yapon, koreys, indonez va malay. Har bir talaba asosiy bitta til va ikkinchi xorijiy tilni o\'rganadi.' },
+            { cat: 'education', q: 'Ta\'lim qaysi tilda olib boriladi?', a: 'Asosan o\'zbek tilida. Asosiy chet til (sharq tili) chuqurlashtirilgan tarzda o\'qitiladi — 1-kursdan boshlab amaliy mashg\'ulotlarning ko\'p qismi shu tilda olib boriladi.' },
+            { cat: 'education', q: 'Bakalavriat va magistratura necha yil davom etadi?', a: 'Bakalavriat — 4 yil, magistratura — 2 yil, doktorantura (PhD) — 3 yil. Sinxron tarjima magistraturasi 2 yillik intensiv dastur.' },
+            { cat: 'education', q: 'Ikkinchi xorijiy til o\'qitiladimi?', a: 'Ha, barcha talabalar asosiy tilga qo\'shimcha ravishda ikkinchi xorijiy tilni (odatda ingliz yoki yana bir sharq tili) o\'rganadi.' },
+            { cat: 'education', q: 'Stipendiya va grantlar bormi?', a: 'Ha. Davlat stipendiyasidan tashqari Zulfiya nomidagi Davlat mukofoti, Navoiy nomidagi Davlat stipendiyasi, Ogahiy rektor stipendiyasi, Yaponiyaning Mitsubishi Corporation stipendiyasi va boshqa xalqaro grantlar mavjud.' },
+            { cat: 'education', q: 'Ta\'lim haqi qancha turadi?', a: 'Shartnoma narxi har yili universitet va Vazirlar Mahkamasi tomonidan belgilanadi. Aniq miqdor qabul vaqtida e\'lon qilinadi. Davlat granti asosida bepul o\'qish imkoniyati ham mavjud.' },
+            { cat: 'education', q: 'Amaliyot qaerda o\'tkaziladi?', a: 'Talabalar TDShU qoshidagi tarjima byurolari, vazirliklar, davlat tashkilotlari, telekanallar, gazetalar va boshqa OAVlarda, shuningdek xalqaro tashkilotlarda amaliyot o\'tkazadi.' },
+
+            // Xalqaro
+            { cat: 'international', q: 'Xorijiy stajirovkalar mavjudmi?', a: 'Ha, juda faol. Talabalar Xitoy, Hindiston, Yaponiya, Turkiya, arab davlatlari, Indoneziya va boshqa mamlakatlarda turli ta\'lim grantlari orqali stajirovka va til kurslarini o\'tkazadi.' },
+            { cat: 'international', q: 'Qanday almashinuv dasturlari mavjud?', a: 'Erasmus+, TEMPUS, JICA, TIKA, Konfutsiy instituti, Mitsubishi Corporation, Sejong instituti, Lal Bahadur Shastri markazi va boshqa xalqaro tashkilotlar bilan hamkorlik mavjud.' },
+            { cat: 'international', q: 'Bitirgandan keyin xorijda ishlash mumkinmi?', a: 'Ha. Bitiruvchilar elchixonalar, BMT idoralari, xalqaro tashkilotlar, xorijiy kompaniyalar, OAV (telekanal, gazeta) va o\'qituvchilik sohasida ishlash imkoniyatlariga ega.' },
+            { cat: 'international', q: 'Xitoy/Yaponiya/Koreyaga qanday borish mumkin?', a: 'Oliy maktab orqali ariza topshirib, mos grantlarni yutib olish kerak. Eng keng tarqalganlari: Konfutsiy instituti stipendiyalari (Xitoy), JASSO va MEXT (Yaponiya), KGSP (Janubiy Koreya). Universitet ariza tayyorlashda yordam beradi.' },
+            { cat: 'international', q: 'TDShU diplomi xorijda tan olinadimi?', a: 'TDShU diplomi xalqaro miqyosda tan olingan. Konkret bir mamlakatda (masalan, Yevropa Ittifoqi yoki AQSh) ishlash uchun nostrifikatsiya (diplomni tasdiqlash) talab qilinishi mumkin.' },
+
+            // Boshqa
+            { cat: 'other', q: 'Saytga ilmiy maqolani qanday joylashtirish mumkin?', a: 'Yuqori menyudagi "Maqolalar" → "Maqola yuborish" sahifasidan formani to\'ldiring va yuboring. Admin maqolani ko\'rib chiqib tasdiqlagandan keyin u saytda chop etiladi (24-48 soat ichida).' },
+            { cat: 'other', q: 'O\'qituvchilar bilan qanday bog\'lanish mumkin?', a: '"O\'qituvchilar" sahifasidan har bir o\'qituvchining ismi va lavozimini ko\'rishingiz mumkin. Ba\'zilarning email manzili ham ko\'rsatilgan. Yoki "Aloqa" sahifasidagi forma orqali murojaat qiling — ma\'muriyat sizni kerakli o\'qituvchiga yo\'naltiradi.' },
+            { cat: 'other', q: 'Kafedra qaerda joylashgan?', a: 'Toshkent shahar, Mirzo Ulug\'bek tumani, Amir Temur ko\'chasi, 20-uy. Toshkent davlat sharqshunoslik universitetining markaziy binosida. Metro: "Buyuk Ipak Yo\'li" yoki "Pushkin" bekati.' },
+            { cat: 'other', q: 'Kutubxona xizmatidan kim foydalana oladi?', a: 'TDShU kutubxonasi barcha talabalar va o\'qituvchilarga ochiq. 5000+ adabiyot va elektron kutubxona mavjud. Tashqi foydalanuvchilar kutubxona ma\'muriyati ruxsati bilan kirishlari mumkin.' },
+            { cat: 'other', q: 'Saytda til qanday almashtiriladi?', a: 'Yuqori o\'ng burchakdagi O\'zbekiston / Rossiya / Buyuk Britaniya bayroqchalarini bosib til tanlash mumkin. Tanlov keyingi tashriflar uchun ham eslab qolinadi.' },
+            { cat: 'other', q: 'Saytda qanday qidirish mumkin?', a: 'Yuqori menyu o\'ng burchakdagi 🔍 (lupa) tugmasini bosing yoki klaviaturadan Ctrl+K bosing. Sahifa, o\'qituvchi, til, yo\'nalish va maqolalar bo\'yicha qidirish mumkin.' }
+        ];
+
+        let currentCat = 'all';
+        let currentQuery = '';
+
+        function renderFAQ() {
+            const list = document.getElementById('faqList');
+            let filtered = currentCat === 'all' ? FAQS : FAQS.filter(f => f.cat === currentCat);
+            if (currentQuery) {
+                const q = currentQuery.toLowerCase();
+                filtered = filtered.filter(f =>
+                    f.q.toLowerCase().includes(q) ||
+                    f.a.toLowerCase().includes(q)
+                );
+            }
+
+            if (!filtered.length) {
+                list.innerHTML = `
+                    <div class="faq-empty">
+                        <i class="fas fa-search-minus"></i>
+                        <p>Hech qanday savol topilmadi</p>
+                        <p style="font-size: 13px;">Boshqa so'z bilan qidiring yoki "Hammasi" tabini tanlang</p>
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = filtered.map(f => `
+                <div class="faq-item">
+                    <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+                        <span><i class="far fa-circle-question" style="color: var(--accent-blue); margin-right: 10px;"></i>${escapeHtml(f.q)}</span>
+                        <i class="fas fa-plus faq-icon"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>${escapeHtml(f.a)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterFAQ(cat, btn) {
+            currentCat = cat;
+            document.querySelectorAll('.faq-cat-tab').forEach(t => t.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            renderFAQ();
+        }
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        document.getElementById('faqSearchInput').addEventListener('input', function(e) {
+            currentQuery = e.target.value.trim();
+            renderFAQ();
+        });
+
+        renderFAQ();
+    </script>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>

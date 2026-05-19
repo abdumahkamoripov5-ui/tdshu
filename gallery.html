@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galereya - TDShU</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gallery-tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        .gallery-tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: var(--light-gray);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            color: var(--text-dark);
+        }
+        .gallery-tab.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+        .gallery-tab:hover { background: var(--gray); }
+        .gallery-tab.active:hover { background: var(--dark-blue); }
+
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 992px) { .photos-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 700px) { .photos-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 420px) { .photos-grid { grid-template-columns: 1fr; } }
+
+        .photo-card {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            aspect-ratio: 1;
+            background: var(--light-gray);
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .photo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+        }
+        .photo-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+        .photo-card:hover img { transform: scale(1.08); }
+
+        .photo-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.75), transparent 60%);
+            display: flex;
+            align-items: flex-end;
+            padding: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .photo-card:hover .photo-overlay { opacity: 1; }
+        .photo-overlay-title {
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.3;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .gallery-loading, .gallery-error {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--dark-gray);
+        }
+        .gallery-loading i, .gallery-error i {
+            font-size: 50px;
+            display: block;
+            margin-bottom: 15px;
+        }
+        .gallery-error {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 8px;
+            color: #856404;
+            text-align: left;
+            padding: 20px 24px;
+        }
+        .gallery-error i { display: inline; font-size: 18px; margin-right: 8px; }
+
+        /* Image preview modal */
+        .photo-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            cursor: zoom-out;
+        }
+        .photo-modal.show { display: flex; }
+        .photo-modal img {
+            max-width: 100%;
+            max-height: 85vh;
+            object-fit: contain;
+            border-radius: 6px;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+        }
+        .photo-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .photo-modal-close:hover { background: rgba(255, 255, 255, 0.3); }
+        .photo-modal-caption {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            max-width: 80%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="container top-bar-content">
+            <div class="logo-section">
+                <img src="https://tsuos.uz/wp-content/uploads/2025/04/TDSHU-Recovered-5p.png" alt="TDShU logo" style="width: 80px; height: 80px; object-fit: contain;">
+                <div class="logo-text">
+                    Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi
+                </div>
+            </div>
+            <div class="contact-info">
+                <div class="phone-icon"><i class="fas fa-phone"></i></div>
+                <div class="phone-details">
+                    <h4>ISHONCH TELEFONI</h4>
+                    <p>+998 71 233 34 24</p>
+                </div>
+            </div>
+            <div class="language-flags">
+                <img src="https://flagcdn.com/w40/uz.png" alt="O'zbek" class="flag">
+                <img src="https://flagcdn.com/w40/ru.png" alt="Русский" class="flag">
+                <img src="https://flagcdn.com/w40/gb.png" alt="English" class="flag">
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav class="main-nav">
+        <div class="container nav-container">
+            <ul class="nav-menu">
+                <li><a href="index.html">BOSH SAHIFA</a></li>
+                <li><a href="about.html">OLIY MAKTAB</a></li>
+                <li><a href="faculties.html">TA'LIM YO'NALISHLARI</a></li>
+                <li><a href="teachers.html">O'QITUVCHILAR</a></li>
+                <li><a href="articles.html">MAQOLALAR</a></li>
+                <li><a href="news.html">YANGILIKLAR</a></li>
+                <li><a href="gallery.html" class="active">GALEREYA</a></li>
+                <li><a href="faq.html">SAVOLLAR</a></li>
+                <li><a href="contact.html">ALOQA</a></li>
+            </ul>
+            <div class="search-icon"><i class="fas fa-search"></i></div>
+        </div>
+    </nav>
+
+    <!-- PAGE HEADER -->
+    <section class="hero" style="height: 350px;">
+        <div class="hero-slide" style="background-image: url('images/background.jpg');">
+            <div class="hero-content">
+                <h1>Galereya</h1>
+                <p>Wikimedia Commons ochiq manbalaridan tematik rasmlar</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- GALLERY -->
+    <section class="section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Tematik rasmlar</h2>
+                <p>Mavzu tanlang — Wikimedia Commons (mutlaqo bepul ochiq manba) saytidan rasmlar avtomatik yuklanadi</p>
+            </div>
+
+            <div class="gallery-tabs">
+                <button class="gallery-tab active" onclick="loadTsuosGallery(this)"><i class="fas fa-star"></i> TDShU rasmiy</button>
+                <button class="gallery-tab" onclick="loadGallery('universitet', this)">Universitet</button>
+                <button class="gallery-tab" onclick="loadGallery('tarjima', this)">Tarjima</button>
+                <button class="gallery-tab" onclick="loadGallery('tilshunoslik', this)">Tilshunoslik</button>
+                <button class="gallery-tab" onclick="loadGallery('jurnalistika', this)">Jurnalistika</button>
+                <button class="gallery-tab" onclick="loadGallery('sharq', this)">Sharq tillari</button>
+                <button class="gallery-tab" onclick="loadGallery('toshkent', this)">Toshkent</button>
+                <button class="gallery-tab" onclick="loadGallery('uzbekistan', this)">O'zbekiston</button>
+            </div>
+
+            <p id="tsuosStatus" style="text-align: center; color: var(--dark-gray); margin-bottom: 18px; font-size: 13px; display: none;">
+                <i class="fas fa-sync-alt" style="color: var(--accent-blue);"></i>
+                <span id="tsuosStatusText"></span>
+            </p>
+
+            <div class="photos-grid" id="photosGrid">
+                <div class="gallery-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Rasmlar yuklanmoqda...</p>
+                </div>
+            </div>
+
+            <p style="text-align: center; color: var(--dark-gray); margin-top: 30px; font-size: 13px;">
+                <i class="fas fa-info-circle"></i>
+                <strong>TDShU rasmiy</strong> tabi tsuos.uz saytidan, qolganlari Wikimedia Commons (Creative Commons) saytidan rasmlar oladi.
+                Yuklash uchun internet aloqasi kerak.
+            </p>
+        </div>
+    </section>
+
+    <!-- PHOTO PREVIEW MODAL -->
+    <div class="photo-modal" id="photoModal" onclick="closePhoto()">
+        <button class="photo-modal-close" onclick="event.stopPropagation();closePhoto()" aria-label="Yopish">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="photoModalImg" src="" alt="">
+        <div class="photo-modal-caption" id="photoModalCaption"></div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>Oliy maktab haqida</h4>
+                    <p>Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi — Toshkent davlat sharqshunoslik universiteti tarkibidagi tarjimon, tilshunos va xalqaro jurnalist tayyorlash markazi.</p>
+                    <div class="social-links">
+                        <a href="https://t.me/tsuos" class="social-link telegram" target="_blank"><i class="fab fa-telegram"></i></a>
+                        <a href="https://www.youtube.com/@tsuosuz" class="social-link youtube" target="_blank"><i class="fab fa-youtube"></i></a>
+                        <a href="#" class="social-link instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="social-link facebook" target="_blank"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Tezkor havolalar</h4>
+                    <ul>
+                        <li><a href="index.html">Bosh sahifa</a></li>
+                        <li><a href="about.html">Oliy maktab</a></li>
+                        <li><a href="faculties.html">Ta'lim yo'nalishlari</a></li>
+                        <li><a href="teachers.html">O'qituvchilar</a></li>
+                        <li><a href="articles.html">Maqolalar</a></li>
+                        <li><a href="news.html">Yangiliklar</a></li>
+                        <li><a href="gallery.html">Galereya</a></li>
+                        <li><a href="contact.html">Aloqa</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Talabalarga</h4>
+                    <ul>
+                        <li><a href="#">Qabul</a></li>
+                        <li><a href="#">Stipendiya</a></li>
+                        <li><a href="#">Kutubxona</a></li>
+                        <li><a href="submit-article.html">Maqola yuborish</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Bog'lanish</h4>
+                    <p><i class="fas fa-map-marker-alt"></i> Toshkent, Amir Temur ko'chasi, 20</p>
+                    <p><i class="fas fa-phone"></i> +998 94 613 46 43</p>
+                    <p><i class="fas fa-envelope"></i> info@tsuos.uz</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi. Barcha huquqlar himoyalangan.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const TOPICS = {
+            universitet:  { name: 'Universitet',  q: 'university campus students library lecture' },
+            tarjima:      { name: 'Tarjima',      q: 'translation interpretation language dictionary' },
+            tilshunoslik: { name: 'Tilshunoslik', q: 'linguistics alphabet calligraphy manuscript' },
+            jurnalistika: { name: 'Jurnalistika', q: 'journalism newspaper press conference media camera' },
+            sharq:        { name: 'Sharq tillari',q: 'arabic chinese japanese korean calligraphy script' },
+            toshkent:     { name: 'Toshkent',     q: 'Tashkent Uzbekistan' },
+            uzbekistan:   { name: 'O\'zbekiston', q: 'Uzbekistan culture Samarkand Bukhara' }
+        };
+
+        async function fetchImages(query) {
+            const url = 'https://commons.wikimedia.org/w/api.php' +
+                '?action=query' +
+                '&format=json' +
+                '&prop=imageinfo' +
+                '&iiprop=url|thumburl|extmetadata' +
+                '&iiurlwidth=400' +
+                '&generator=search' +
+                '&gsrnamespace=6' +
+                '&gsrsearch=' + encodeURIComponent(query + ' filemime:image/jpeg|image/png') +
+                '&gsrlimit=40' +
+                '&origin=*';
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const pages = (data.query && data.query.pages) || {};
+                return Object.values(pages)
+                    .map(p => {
+                        const info = (p.imageinfo && p.imageinfo[0]) || {};
+                        return {
+                            thumb: info.thumburl,
+                            full: info.url,
+                            title: (p.title || '').replace(/^File:/, '').replace(/\.[a-z]+$/i, '').replace(/_/g, ' ')
+                        };
+                    })
+                    .filter(x => x.thumb);
+            } catch (e) {
+                console.error('Wikimedia fetch error:', e);
+                return [];
+            }
+        }
+
+        // ===== TDShU RASMIY SAYTIDAN RASMLAR =====
+        const TSUOS_CACHE_KEY = 'tsuos_images_cache_v1';
+        const TSUOS_CACHE_TTL = 30 * 60 * 1000; // 30 daqiqa
+        const TSUOS_PAGES = [
+            'https://tsuos.uz/',
+            'https://tsuos.uz/yangiliklar/'
+        ];
+
+        async function fetchViaProxy(url) {
+            // Birinchi proxy
+            try {
+                const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url));
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d && d.contents) return d.contents;
+                }
+            } catch (e) { /* fallback */ }
+            // Zaxira proxy
+            try {
+                const r2 = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
+                if (r2.ok) return await r2.text();
+            } catch (e) {}
+            return null;
+        }
+
+        function extractImagesFromHtml(html, baseHost) {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const imgs = doc.querySelectorAll('img');
+            const photos = [];
+            const seen = new Set();
+
+            imgs.forEach(img => {
+                let src = img.getAttribute('data-src') ||
+                          img.getAttribute('data-lazy-src') ||
+                          img.getAttribute('src') || '';
+                if (!src) return;
+                if (src.startsWith('//')) src = 'https:' + src;
+                else if (src.startsWith('/')) src = baseHost + src;
+                else if (!src.startsWith('http')) return;
+
+                if (!src.includes('tsuos.uz')) return;
+                if (!src.match(/\.(jpg|jpeg|png|webp)$/i)) return;
+                if (src.includes('TDSHU-Recovered-5p')) return; // logo
+
+                // Eskizni asl o'lchamga aylantirish: image-300x200.jpg -> image.jpg
+                const full = src.replace(/-\d+x\d+(\.\w+)$/, '$1');
+                if (seen.has(full)) return;
+                seen.add(full);
+
+                const alt = (img.getAttribute('alt') || '').trim();
+                photos.push({
+                    thumb: src,
+                    full: full,
+                    title: alt || 'TDShU rasmi'
+                });
+            });
+            return photos;
+        }
+
+        async function fetchTsuosImages() {
+            const allPhotos = [];
+            for (const pageUrl of TSUOS_PAGES) {
+                const html = await fetchViaProxy(pageUrl);
+                if (!html) continue;
+                const photos = extractImagesFromHtml(html, 'https://tsuos.uz');
+                allPhotos.push(...photos);
+            }
+            // Dublikatlarni olib tashlash
+            const seen = new Set();
+            return allPhotos.filter(p => {
+                if (seen.has(p.full)) return false;
+                seen.add(p.full);
+                return true;
+            });
+        }
+
+        function showTsuosStatus(text) {
+            const box = document.getElementById('tsuosStatus');
+            const t = document.getElementById('tsuosStatusText');
+            if (box && t) { box.style.display = ''; t.textContent = text; }
+        }
+        function hideTsuosStatus() {
+            const box = document.getElementById('tsuosStatus');
+            if (box) box.style.display = 'none';
+        }
+
+        function renderPhotos(photos) {
+            const target = document.getElementById('photosGrid');
+            if (!photos || !photos.length) {
+                target.innerHTML = `
+                    <div class="gallery-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Rasmlar yuklab bo'lmadi.</strong>
+                        Internet aloqasini tekshiring yoki boshqa tabni tanlang.
+                    </div>`;
+                return;
+            }
+            target.innerHTML = photos.map(p => `
+                <div class="photo-card" onclick="openPhoto('${encodeURIComponent(p.full)}', '${encodeURIComponent(p.title)}')">
+                    <img src="${p.thumb}" alt="${p.title.replace(/"/g, '&quot;')}" loading="lazy" referrerpolicy="no-referrer"
+                         onerror="this.parentNode.style.display='none'">
+                    <div class="photo-overlay">
+                        <div class="photo-overlay-title">${p.title.replace(/</g, '&lt;')}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadTsuosGallery(btn, forceRefresh) {
+            document.querySelectorAll('.gallery-tab').forEach(t => t.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const target = document.getElementById('photosGrid');
+
+            // Kesh tekshirish
+            let cached = null;
+            try { cached = JSON.parse(localStorage.getItem(TSUOS_CACHE_KEY) || 'null'); } catch (e) {}
+
+            if (!forceRefresh && cached && cached.photos && (Date.now() - cached.time) < TSUOS_CACHE_TTL) {
+                renderPhotos(cached.photos);
+                const minutesAgo = Math.round((Date.now() - cached.time) / 60000);
+                showTsuosStatus(`Oxirgi yangilanish: ${minutesAgo} daqiqa oldin (har 30 daqiqada avtomatik yangilanadi)`);
+                return;
+            }
+
+            target.innerHTML = `
+                <div class="gallery-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>tsuos.uz saytidan rasmlar yuklanmoqda...</p>
+                </div>`;
+            showTsuosStatus('Yuklanmoqda...');
+
+            const photos = await fetchTsuosImages();
+            if (photos.length > 0) {
+                try {
+                    localStorage.setItem(TSUOS_CACHE_KEY, JSON.stringify({ time: Date.now(), photos: photos }));
+                } catch (e) {}
+                showTsuosStatus(`Hozirgina yangilandi — ${photos.length} ta rasm (har 30 daqiqada avtomatik yangilanadi)`);
+            } else {
+                hideTsuosStatus();
+            }
+            renderPhotos(photos);
+        }
+
+        // Har 30 daqiqada avtomatik yangilash (faqat shu tab faol bo'lganda)
+        setInterval(() => {
+            const activeTab = document.querySelector('.gallery-tab.active');
+            if (activeTab && activeTab.textContent.includes('TDShU rasmiy') && !document.hidden) {
+                loadTsuosGallery(activeTab, true);
+            }
+        }, TSUOS_CACHE_TTL);
+
+        // ===== WIKIMEDIA COMMONS RASMLARI =====
+        async function loadGallery(key, btn) {
+            hideTsuosStatus();
+            document.querySelectorAll('.gallery-tab').forEach(t => t.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const target = document.getElementById('photosGrid');
+            target.innerHTML = `
+                <div class="gallery-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Rasmlar Wikimedia Commons saytidan yuklanmoqda...</p>
+                </div>`;
+
+            const topic = TOPICS[key];
+            if (!topic) return;
+
+            const photos = await fetchImages(topic.q);
+
+            if (!photos.length) {
+                target.innerHTML = `
+                    <div class="gallery-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Rasmlar yuklab bo'lmadi.</strong>
+                        Internet aloqasini tekshiring yoki boshqa mavzuni tanlang.
+                    </div>`;
+                return;
+            }
+
+            target.innerHTML = photos.map(p => `
+                <div class="photo-card" onclick="openPhoto('${encodeURIComponent(p.full)}', '${encodeURIComponent(p.title)}')">
+                    <img src="${p.thumb}" alt="${p.title.replace(/"/g, '&quot;')}" loading="lazy"
+                         onerror="this.parentNode.style.display='none'">
+                    <div class="photo-overlay">
+                        <div class="photo-overlay-title">${p.title.replace(/</g, '&lt;')}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openPhoto(encUrl, encTitle) {
+            document.getElementById('photoModalImg').src = decodeURIComponent(encUrl);
+            document.getElementById('photoModalCaption').textContent = decodeURIComponent(encTitle);
+            document.getElementById('photoModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePhoto() {
+            document.getElementById('photoModal').classList.remove('show');
+            document.getElementById('photoModalImg').src = '';
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closePhoto();
+        });
+
+        // Sahifa ochilganda — TDShU rasmiy rasmlari avtomatik yuklanadi
+        loadTsuosGallery(document.querySelector('.gallery-tab.active'));
+    </script>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
