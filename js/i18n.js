@@ -20,7 +20,18 @@
             "TA'LIM YO'NALISHLARI": "НАПРАВЛЕНИЯ",
             "O'QITUVCHILAR": "ПРЕПОДАВАТЕЛИ",
             "MAQOLALAR": "СТАТЬИ",
+            "YANGILIKLAR": "НОВОСТИ",
+            "GALEREYA": "ГАЛЕРЕЯ",
+            "SAVOLLAR": "ВОПРОСЫ",
             "ALOQA": "КОНТАКТЫ",
+
+            // ===== INDEX ABOUT PARAGRAFLAR =====
+            "Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi 2024-yilda Toshkent davlat sharqshunoslik universiteti tarkibida tashkil etilgan. Oliy maktab sharq tillari bo'yicha malakali tarjimon, tilshunos va jurnalistlar tayyorlashga ixtisoslashgan.":
+                "Высшая школа переводоведения, языкознания и международной журналистики основана в 2024 году в составе Ташкентского государственного университета востоковедения. Школа специализируется на подготовке квалифицированных переводчиков, лингвистов и журналистов по восточным языкам.",
+            "2025-2026 o'quv yilida oliy maktabda 21 nafar professor-o'qituvchi faoliyat yuritmoqda. Ulardan 7 nafari fan doktori, 4 nafari fan nomzodi, 5 nafari falsafa doktori (PhD). Oliy maktabning ilmiy salohiyati 70% ni tashkil etadi.":
+                "В 2025-2026 учебном году в школе работает 21 преподаватель. Из них 7 докторов наук, 4 кандидата наук, 5 докторов философии (PhD). Научный потенциал школы составляет 70%.",
+            "Oliy maktabda arab, fors, turk, hind, urdu, dariy, xitoy, yapon, koreys, indonez va malay tillari o'qitiladi. Talabalarimiz xalqaro va davlat stipendiyalari sovrindorlari hisoblanadi.":
+                "В школе преподаются арабский, персидский, турецкий, хинди, урду, дари, китайский, японский, корейский, индонезийский и малайский языки. Наши студенты являются обладателями международных и государственных стипендий.",
 
             // ===== COMMON BUTTONS =====
             "Batafsil": "Подробнее",
@@ -104,6 +115,10 @@
             "Oliy maktab": "Высшая школа",
             "O'qituvchilar": "Преподаватели",
             "Maqolalar": "Статьи",
+            "Yangiliklar": "Новости",
+            "Galereya": "Галерея",
+            "Savollar": "Вопросы",
+            "Savol-javob (FAQ)": "Вопросы и ответы (FAQ)",
             "Aloqa": "Контакты",
             "Qabul": "Приём",
             "Stipendiya": "Стипендия",
@@ -285,7 +300,18 @@
             "TA'LIM YO'NALISHLARI": "PROGRAMS",
             "O'QITUVCHILAR": "FACULTY",
             "MAQOLALAR": "ARTICLES",
+            "YANGILIKLAR": "NEWS",
+            "GALEREYA": "GALLERY",
+            "SAVOLLAR": "FAQ",
             "ALOQA": "CONTACT",
+
+            // ===== INDEX ABOUT PARAGRAFLAR =====
+            "Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi 2024-yilda Toshkent davlat sharqshunoslik universiteti tarkibida tashkil etilgan. Oliy maktab sharq tillari bo'yicha malakali tarjimon, tilshunos va jurnalistlar tayyorlashga ixtisoslashgan.":
+                "The Higher School of Translation Studies, Linguistics and International Journalism was founded in 2024 within Tashkent State University of Oriental Studies. The school specializes in training qualified translators, linguists and journalists in Oriental languages.",
+            "2025-2026 o'quv yilida oliy maktabda 21 nafar professor-o'qituvchi faoliyat yuritmoqda. Ulardan 7 nafari fan doktori, 4 nafari fan nomzodi, 5 nafari falsafa doktori (PhD). Oliy maktabning ilmiy salohiyati 70% ni tashkil etadi.":
+                "In the 2025-2026 academic year, 21 faculty members work at the school. Of them, 7 are Doctors of Science, 4 are Candidates of Science, and 5 are Doctors of Philosophy (PhD). The school's academic potential is 70%.",
+            "Oliy maktabda arab, fors, turk, hind, urdu, dariy, xitoy, yapon, koreys, indonez va malay tillari o'qitiladi. Talabalarimiz xalqaro va davlat stipendiyalari sovrindorlari hisoblanadi.":
+                "The school teaches Arabic, Persian, Turkish, Hindi, Urdu, Dari, Chinese, Japanese, Korean, Indonesian and Malay. Our students are recipients of international and state scholarships.",
 
             // ===== COMMON BUTTONS =====
             "Batafsil": "More",
@@ -370,6 +396,10 @@
             "Oliy maktab": "About",
             "O'qituvchilar": "Faculty",
             "Maqolalar": "Articles",
+            "Yangiliklar": "News",
+            "Galereya": "Gallery",
+            "Savollar": "FAQ",
+            "Savol-javob (FAQ)": "FAQ",
             "Aloqa": "Contact",
             "Qabul": "Admissions",
             "Stipendiya": "Scholarships",
@@ -557,8 +587,16 @@
         nodes.forEach(function(n) {
             var raw = n.nodeValue;
             var trimmed = raw.trim();
-            if (trimmed && dict[trimmed]) {
+            if (!trimmed) return;
+            // 1) To'g'ridan-to'g'ri moslik
+            if (dict[trimmed]) {
                 n.nodeValue = raw.replace(trimmed, dict[trimmed]);
+                return;
+            }
+            // 2) Bo'shliqlarni normallashtirib moslik (ko'p qatorli matnlar uchun)
+            var normalized = trimmed.replace(/\s+/g, ' ');
+            if (dict[normalized]) {
+                n.nodeValue = dict[normalized];
             }
         });
 
@@ -592,7 +630,7 @@
             var fl = flagToLang(flag);
             if (fl === lang) {
                 flag.style.opacity = '1';
-                flag.style.outline = '2px solid #4a90d9';
+                flag.style.outline = '2px solid #c9a227';
                 flag.style.outlineOffset = '1px';
             } else {
                 flag.style.opacity = '0.55';

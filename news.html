@@ -302,7 +302,7 @@
 
         function extractImage(html) {
             if (!html) return '';
-            const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+            const m = html.match(/<img loading="lazy"[^>]+src=["']([^"']+)["']/i);
             return m ? m[1] : '';
         }
 
@@ -384,7 +384,7 @@
                 <a href="${item.link}" target="_blank" rel="noopener" class="news-link-card">
                     <div class="news-image">
                         ${item.thumbnail
-                            ? `<img src="${item.thumbnail}" alt="" onerror="this.parentNode.innerHTML='<div class=\\'news-image-placeholder\\'><i class=\\'fas fa-newspaper\\'></i></div>'">`
+                            ? `<img loading="lazy" src="${item.thumbnail}" alt="" onerror="this.parentNode.innerHTML='<div class=\\'news-image-placeholder\\'><i class=\\'fas fa-newspaper\\'></i></div>'">`
                             : `<div class="news-image-placeholder"><i class="fas fa-newspaper"></i></div>`
                         }
                     </div>
