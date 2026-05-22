@@ -21,7 +21,6 @@
             "O'QITUVCHILAR": "ПРЕПОДАВАТЕЛИ",
             "MAQOLALAR": "СТАТЬИ",
             "YANGILIKLAR": "НОВОСТИ",
-            "GALEREYA": "ГАЛЕРЕЯ",
             "SAVOLLAR": "ВОПРОСЫ",
             "ALOQA": "КОНТАКТЫ",
 
@@ -116,7 +115,6 @@
             "O'qituvchilar": "Преподаватели",
             "Maqolalar": "Статьи",
             "Yangiliklar": "Новости",
-            "Galereya": "Галерея",
             "Savollar": "Вопросы",
             "Savol-javob (FAQ)": "Вопросы и ответы (FAQ)",
             "Aloqa": "Контакты",
@@ -301,7 +299,6 @@
             "O'QITUVCHILAR": "FACULTY",
             "MAQOLALAR": "ARTICLES",
             "YANGILIKLAR": "NEWS",
-            "GALEREYA": "GALLERY",
             "SAVOLLAR": "FAQ",
             "ALOQA": "CONTACT",
 
@@ -397,7 +394,6 @@
             "O'qituvchilar": "Faculty",
             "Maqolalar": "Articles",
             "Yangiliklar": "News",
-            "Galereya": "Gallery",
             "Savollar": "FAQ",
             "Savol-javob (FAQ)": "FAQ",
             "Aloqa": "Contact",

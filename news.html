@@ -319,24 +319,65 @@
             }
         }
 
+        function escHtml(s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        function escAttr(s) {
+            return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        // 1-usul: rss2json xizmati orqali
+        async function fetchViaRss2json(src) {
+            const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(src.url));
+            const data = await res.json();
+            if (data.status !== 'ok') throw new Error(data.message || 'RSS yuklanmadi');
+            return data.items.map(item => ({
+                title: item.title,
+                description: stripHtml(item.description || '').slice(0, 160),
+                link: item.link,
+                pubDate: item.pubDate,
+                pubDateStr: formatDate(item.pubDate),
+                thumbnail: item.thumbnail || (item.enclosure && item.enclosure.link) || extractImage(item.description) || '',
+                source: src.name
+            }));
+        }
+
+        // 2-usul (zaxira): proksi orqali xom RSS olib, brauzerda parslash
+        async function fetchViaProxy(src) {
+            const res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(src.url));
+            const xmlText = await res.text();
+            const xml = new DOMParser().parseFromString(xmlText, 'text/xml');
+            return Array.from(xml.querySelectorAll('item')).map(it => {
+                const get = t => (it.querySelector(t) ? it.querySelector(t).textContent : '');
+                const descRaw = get('description');
+                let thumb = '';
+                const enc = it.querySelector('enclosure');
+                if (enc && /image/i.test(enc.getAttribute('type') || '')) thumb = enc.getAttribute('url') || '';
+                if (!thumb) thumb = extractImage(descRaw);
+                return {
+                    title: get('title'),
+                    description: stripHtml(descRaw).slice(0, 160),
+                    link: get('link'),
+                    pubDate: get('pubDate'),
+                    pubDateStr: formatDate(get('pubDate')),
+                    thumbnail: thumb,
+                    source: src.name
+                };
+            });
+        }
+
         async function fetchFeed(srcKey) {
             const src = NEWS_SOURCES[srcKey];
             try {
-                const res = await fetch('https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(src.url));
-                const data = await res.json();
-                if (data.status !== 'ok') throw new Error(data.message || 'RSS yuklanmadi');
-                return data.items.map(item => ({
-                    title: item.title,
-                    description: stripHtml(item.description || '').slice(0, 160),
-                    link: item.link,
-                    pubDate: item.pubDate,
-                    pubDateStr: formatDate(item.pubDate),
-                    thumbnail: item.thumbnail || (item.enclosure && item.enclosure.link) || extractImage(item.description) || '',
-                    source: src.name
-                }));
-            } catch (e) {
-                console.error('Feed error:', src.name, e);
-                return [];
+                return await fetchViaRss2json(src);
+            } catch (e1) {
+                console.warn('rss2json ishlamadi, zaxira proksiga o\'tilmoqda:', src.name, e1.message);
+                try {
+                    return await fetchViaProxy(src);
+                } catch (e2) {
+                    console.error('Feed error:', src.name, e2);
+                    return [];
+                }
             }
         }
 
@@ -374,6 +415,11 @@
                         <strong>Yangiliklar yuklab bo'lmadi.</strong>
                         Internet aloqasini tekshiring yoki keyinroq urinib ko'ring.
                         Manba sayti vaqtincha ishlamayotgan bo'lishi mumkin.
+                        <div style="margin-top:14px;">
+                            <button onclick="loadNews(currentSource)" class="btn">
+                                <i class="fas fa-rotate-right"></i> Qayta urinish
+                            </button>
+                        </div>
                     </div>`;
                 return;
             }
@@ -386,17 +432,17 @@
             }
 
             target.innerHTML = items.map(item => `
-                <a href="${item.link}" target="_blank" rel="noopener" class="news-link-card">
+                <a href="${escAttr(item.link)}" target="_blank" rel="noopener" class="news-link-card">
                     <div class="news-image">
                         ${item.thumbnail
-                            ? `<img loading="lazy" src="${item.thumbnail}" alt="" onerror="this.parentNode.innerHTML='<div class=\\'news-image-placeholder\\'><i class=\\'fas fa-newspaper\\'></i></div>'">`
+                            ? `<img loading="lazy" src="${escAttr(item.thumbnail)}" alt="" onerror="this.parentNode.innerHTML='<div class=\\'news-image-placeholder\\'><i class=\\'fas fa-newspaper\\'></i></div>'">`
                             : `<div class="news-image-placeholder"><i class="fas fa-newspaper"></i></div>`
                         }
                     </div>
                     <div class="news-content">
-                        <span class="news-source">${item.source}</span>
-                        <h3>${item.title}</h3>
-                        <p>${item.description}</p>
+                        <span class="news-source">${escHtml(item.source)}</span>
+                        <h3>${escHtml(item.title)}</h3>
+                        <p>${escHtml(item.description)}</p>
                         <div class="news-meta">
                             <span><i class="far fa-calendar"></i> ${item.pubDateStr}</span>
                             <span class="read-arrow">O'qish <i class="fas fa-arrow-right"></i></span>
