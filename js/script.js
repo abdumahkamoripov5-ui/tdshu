@@ -1,20 +1,6 @@
 // ============================================
-// TDShU - Asosiy JavaScript fayli
+// TDShU - Asosiy JavaScript fayli (backend API orqali)
 // ============================================
-
-// FILE -> Base64 konvertatsiya (rasm uchun)
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        if (!file) {
-            resolve(null);
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
 
 // Form qiymatini name bo'yicha xavfsiz olish
 function getField(form, name) {
@@ -22,93 +8,55 @@ function getField(form, name) {
     return el ? (el.value || '').trim() : '';
 }
 
-// Backend manzili — mahalliy va production'ni avtomatik aniqlaydi
-// Production: backend deploy qilingandan keyin pastdagi URL'ni o'zgartiring
-window.TDSHU_API = window.TDSHU_API || (
-    /localhost|127\.0\.0\.1/.test(location.hostname)
-        ? 'http://localhost:5000'
-        : 'https://tdshu-backend.onrender.com'  // <-- Render'dagi backend URL'ingizni shu yerga yozing
-);
+// Backend manzili js/config.js da belgilanadi (production URL faqat o'sha yerda).
+window.TDSHU_API = window.TDSHU_API || 'http://localhost:5000';
 
-// MAQOLA YUBORISH FORMASI (IndexedDB orqali — katta fayllarni qo'llab-quvvatlaydi)
+// Fayl hajmi cheklovlari (backend bilan mos) — MB
+const MAX_PHOTO_MB = 25;
+const MAX_ATTACH_MB = 100;
+
+// MAQOLA YUBORISH FORMASI — backend API ('/api/articles', multipart)
 async function submitArticle(event) {
     event.preventDefault();
     const form = event.target;
     const submitBtn = form.querySelector('button[type="submit"]');
 
     try {
+        // Hajm tekshiruvi (serverga ortiqcha yuk bormasligi uchun)
+        const photoInput = form.querySelector('[name="photo"]');
+        if (photoInput && photoInput.files && photoInput.files[0]) {
+            const f = photoInput.files[0];
+            if (f.size > MAX_PHOTO_MB * 1024 * 1024) {
+                alert('⚠️ Rasm hajmi ' + MAX_PHOTO_MB + 'MB dan oshmasligi kerak.\nHozirgi hajmi: ' + (f.size / 1024 / 1024).toFixed(1) + 'MB');
+                return;
+            }
+        }
+        const attachInput = form.querySelector('[name="attachment"]');
+        if (attachInput && attachInput.files && attachInput.files[0]) {
+            const f = attachInput.files[0];
+            if (f.size > MAX_ATTACH_MB * 1024 * 1024) {
+                alert('⚠️ Qo\'shimcha fayl hajmi ' + MAX_ATTACH_MB + 'MB dan oshmasligi kerak.\nHozirgi hajmi: ' + (f.size / 1024 / 1024).toFixed(1) + 'MB');
+                return;
+            }
+        }
+
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
         }
 
-        if (!window.tdshuDB) {
-            alert('❌ Ma\'lumotlar bazasi ulanmagan (db.js yuklanmagan).');
-            return;
-        }
+        // Forma maydonlari va fayllarni to'g'ridan-to'g'ri yuborish
+        const fd = new FormData(form);
 
-        // Hajm cheklovlari (MB) — IndexedDB GB hajmgacha qo'llab-quvvatlaydi
-        const MAX_PHOTO_MB = 50;
-        const MAX_ATTACH_MB = 500;
+        const res = await fetch(window.TDSHU_API + '/api/articles', {
+            method: 'POST',
+            body: fd
+        });
 
-        // Rasm faylini olish (majburiy)
-        const photoInput = form.querySelector('[name="photo"]');
-        let photoBlob = null;
-        if (photoInput && photoInput.files && photoInput.files[0]) {
-            const file = photoInput.files[0];
-            if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
-                alert('⚠️ Rasm hajmi ' + MAX_PHOTO_MB + 'MB dan oshmasligi kerak.\nHozirgi hajmi: ' + (file.size / 1024 / 1024).toFixed(1) + 'MB');
-                return;
-            }
-            photoBlob = file;
-        }
-
-        // Qo'shimcha fayl (ixtiyoriy)
-        const attachInput = form.querySelector('[name="attachment"]');
-        let attachmentBlob = null;
-        let attachmentName = '';
-        let attachmentType = '';
-        if (attachInput && attachInput.files && attachInput.files[0]) {
-            const file = attachInput.files[0];
-            if (file.size > MAX_ATTACH_MB * 1024 * 1024) {
-                alert('⚠️ Qo\'shimcha fayl hajmi ' + MAX_ATTACH_MB + 'MB dan oshmasligi kerak.\nHozirgi hajmi: ' + (file.size / 1024 / 1024).toFixed(1) + 'MB');
-                return;
-            }
-            attachmentBlob = file;
-            attachmentName = file.name;
-            attachmentType = file.type;
-        }
-
-        const article = {
-            id: Date.now(),
-            title: getField(form, 'title'),
-            author: getField(form, 'fullName'),
-            position: getField(form, 'position'),
-            department: getField(form, 'department'),
-            subject: getField(form, 'subject'),
-            category: getField(form, 'category'),
-            keywords: getField(form, 'keywords'),
-            email: getField(form, 'email'),
-            phone: getField(form, 'phone'),
-            description: getField(form, 'description'),
-            content: getField(form, 'content'),
-            photoBlob: photoBlob,
-            attachmentBlob: attachmentBlob,
-            attachmentName: attachmentName,
-            attachmentType: attachmentType,
-            date: new Date().toISOString().split('T')[0],
-            createdAt: new Date().toISOString(),
-            status: 'pending'
-        };
-
-        try {
-            await window.tdshuDB.saveArticle(article);
-        } catch (e) {
-            if (e && (e.name === 'QuotaExceededError' || e.code === 22)) {
-                alert('⚠️ Brauzer xotirasi to\'lib qoldi!\n\nFaylni kichikroq qiling yoki admin paneldan eski maqolalarni o\'chiring.');
-                return;
-            }
-            throw e;
+        if (!res.ok) {
+            let msg = 'Server xatosi (' + res.status + ')';
+            try { const d = await res.json(); if (d.error) msg = d.error; } catch (e) {}
+            throw new Error(msg);
         }
 
         alert('✅ Maqolangiz muvaffaqiyatli yuborildi!\n\n' +
@@ -118,7 +66,8 @@ async function submitArticle(event) {
         form.reset();
     } catch (err) {
         console.error(err);
-        alert('❌ Xato yuz berdi: ' + (err.message || err));
+        alert('❌ Yuborib bo\'lmadi: ' + (err.message || err) +
+              '\n\nServer vaqtincha ishlamayotgan bo\'lishi mumkin. Birozdan keyin qayta urinib ko\'ring.');
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
@@ -127,23 +76,19 @@ async function submitArticle(event) {
     }
 }
 
-// ALOQA FORMASI — Backend + IndexedDB fallback
+// ALOQA FORMASI — backend API ('/api/contacts')
 async function submitContact(event) {
     event.preventDefault();
     const form = event.target;
     const submitBtn = form.querySelector('button[type="submit"]');
 
     const payload = {
-        id: Date.now(),
         name: getField(form, 'name'),
         phone: getField(form, 'phone'),
         email: getField(form, 'email'),
         type: getField(form, 'type'),
         subject: getField(form, 'subject'),
-        message: getField(form, 'message'),
-        date: new Date().toISOString().split('T')[0],
-        createdAt: new Date().toISOString(),
-        status: 'pending'
+        message: getField(form, 'message')
     };
 
     try {
@@ -152,40 +97,28 @@ async function submitContact(event) {
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
         }
 
-        // 1) Backend'ga yuborishga urinish (email yuborish uchun)
-        let backendOk = false;
-        let emailSent = false;
-        try {
-            const res = await fetch(window.TDSHU_API + '/api/contacts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (res.ok) {
-                const data = await res.json();
-                backendOk = true;
-                emailSent = !!data.email_sent;
-            }
-        } catch (e) {
-            console.warn('Backend mavjud emas, mahalliy saqlash:', e.message);
+        const res = await fetch(window.TDSHU_API + '/api/contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            let msg = 'Server xatosi (' + res.status + ')';
+            try { const d = await res.json(); if (d.error) msg = d.error; } catch (e) {}
+            throw new Error(msg);
         }
 
-        // 2) Mahalliy bazaga ham saqlash (backend o'chirilgan bo'lsa ham yo'qolmasin)
-        if (window.tdshuDB) {
-            try { await window.tdshuDB.saveContact(payload); } catch (e) {}
-        }
-
-        const msg = backendOk
-            ? (emailSent
-                ? '✅ Murojaatingiz qabul qilindi va emailga yuborildi!\n\n24 soat ichida sizga javob beriladi.'
-                : '✅ Murojaatingiz qabul qilindi!\n\nServerga yuborildi. 24 soat ichida javob beriladi.')
-            : '✅ Murojaatingiz qabul qilindi!\n\n(Backend mavjud emasligi sababli vaqtincha mahalliy saqlandi.)';
-        alert(msg);
+        const data = await res.json().catch(() => ({}));
+        alert(data.email_sent
+            ? '✅ Murojaatingiz qabul qilindi va emailga yuborildi!\n\n24 soat ichida sizga javob beriladi.'
+            : '✅ Murojaatingiz qabul qilindi!\n\nServerga saqlandi. 24 soat ichida javob beriladi.');
 
         form.reset();
     } catch (err) {
         console.error(err);
-        alert('❌ Xato yuz berdi: ' + (err.message || err));
+        alert('❌ Yuborib bo\'lmadi: ' + (err.message || err) +
+              '\n\nServer vaqtincha ishlamayotgan bo\'lishi mumkin. Birozdan keyin qayta urinib ko\'ring.');
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
@@ -194,32 +127,43 @@ async function submitContact(event) {
     }
 }
 
-// MAQOLALAR SAHIFASIDA dinamik yuklash (IndexedDB orqali)
+// Backend maydonlarini ko'rsatish uchun moslashtirish
+function normalizeArticle(a) {
+    a.date = a.created_at ? String(a.created_at).split('T')[0] : (a.date || '');
+    a.photoURL = a.photo_url || '';
+    a.attachmentURL = a.attachment_url || '';
+    a.attachmentName = a.attachment_name || '';
+    return a;
+}
+
+// MAQOLALAR SAHIFASIDA dinamik yuklash (backend API orqali)
 let _approvedArticlesCache = [];
 
 async function loadApprovedArticles() {
     const container = document.querySelector('.articles-grid');
-    if (!container || !window.tdshuDB) return;
-
-    let articles = [];
-    try {
-        articles = await window.tdshuDB.getArticles();
-    } catch (e) {
-        console.error('Maqolalarni yuklab bo\'lmadi:', e);
-        return;
-    }
-    const approved = articles.filter(a => a.status === 'approved');
-    _approvedArticlesCache = approved;
+    if (!container) return;
 
     const emptyState = document.getElementById('emptyArticles') || document.getElementById('indexEmptyArticles');
 
+    let approved = [];
+    try {
+        const res = await fetch(window.TDSHU_API + '/api/articles');
+        if (!res.ok) throw new Error('xato');
+        approved = (await res.json()).map(normalizeArticle);
+    } catch (e) {
+        console.warn('Maqolalarni yuklab bo\'lmadi:', e.message);
+        if (emptyState) emptyState.style.display = '';
+        return;
+    }
+    _approvedArticlesCache = approved;
+
     if (approved.length > 0) {
-        const newCards = approved.map(article => `
+        container.innerHTML = approved.map(article => `
             <div class="article-card">
                 <div class="article-header">
                     <div class="teacher-photo">
                         ${article.photoURL
-                            ? `<img src="${article.photoURL}" alt="${escapeAttr(article.author)}">`
+                            ? `<img src="${escapeAttr(article.photoURL)}" alt="${escapeAttr(article.author)}">`
                             : `<i class="fas fa-user-tie" style="font-size: 28px; color: var(--primary-blue); display: flex; align-items: center; justify-content: center; height: 100%;"></i>`}
                     </div>
                     <div class="teacher-info">
@@ -240,12 +184,11 @@ async function loadApprovedArticles() {
                 </div>
             </div>
         `).join('');
-        container.innerHTML = newCards;
 
         if (emptyState) emptyState.style.display = 'none';
-
-        // Modal HTML'ni bir marta sahifaga qo'shamiz
         ensureArticleModal();
+    } else {
+        if (emptyState) emptyState.style.display = '';
     }
 }
 
@@ -296,8 +239,11 @@ function ensureArticleModal() {
 
 window.openArticle = async function(id) {
     let article = _approvedArticlesCache.find(a => a.id === id);
-    if (!article && window.tdshuDB) {
-        try { article = await window.tdshuDB.getArticle(id); } catch (e) {}
+    if (!article) {
+        try {
+            const res = await fetch(window.TDSHU_API + '/api/articles/' + id);
+            if (res.ok) article = normalizeArticle(await res.json());
+        } catch (e) {}
     }
     if (!article) return;
 
@@ -305,7 +251,7 @@ window.openArticle = async function(id) {
 
     const photoEl = document.getElementById('artModalPhoto');
     if (article.photoURL) {
-        photoEl.innerHTML = `<img src="${article.photoURL}" alt="${escapeAttr(article.author)}">`;
+        photoEl.innerHTML = `<img src="${escapeAttr(article.photoURL)}" alt="${escapeAttr(article.author)}">`;
     } else {
         photoEl.innerHTML = '<i class="fas fa-user-tie"></i>';
     }
@@ -334,7 +280,7 @@ window.openArticle = async function(id) {
         : '';
 
     document.getElementById('artModalAttachment').innerHTML = article.attachmentURL
-        ? `<a href="${article.attachmentURL}" download="${escapeAttr(article.attachmentName || 'fayl')}" class="art-attachment-btn">
+        ? `<a href="${escapeAttr(article.attachmentURL)}" download="${escapeAttr(article.attachmentName || 'fayl')}" class="art-attachment-btn">
              <i class="fas fa-file-download"></i> Faylni yuklab olish: ${escapeHtml(article.attachmentName || 'fayl')}
            </a>`
         : '';
@@ -400,4 +346,3 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 loadApprovedArticles();
 
 console.log('%c🎓 Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi', 'color: #1e4d8b; font-size: 20px; font-weight: bold;');
-console.log('Admin panel: /admin-login.html (login: admin, parol: admin123)');

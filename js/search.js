@@ -15,7 +15,6 @@
         { type: 'page', title: 'Maqolalar', subtitle: 'Ilmiy maqolalar to\'plami', url: 'articles.html', icon: 'fa-newspaper', kw: 'maqola ilmiy tadqiqot' },
         { type: 'page', title: 'Maqola yuborish', subtitle: 'Yangi ilmiy maqola formasi', url: 'submit-article.html', icon: 'fa-paper-plane', kw: 'maqola yuborish forma' },
         { type: 'page', title: 'Yangiliklar', subtitle: "O'zbek OAV'laridan so'nggi xabarlar", url: 'news.html', icon: 'fa-bullhorn', kw: 'yangilik news media kun.uz gazeta.uz' },
-        { type: 'page', title: 'Galereya', subtitle: 'Tematik rasmlar to\'plami', url: 'gallery.html', icon: 'fa-images', kw: 'galereya rasm foto tasvir' },
         { type: 'page', title: 'Aloqa', subtitle: 'Manzil, telefon, xarita', url: 'contact.html', icon: 'fa-envelope', kw: 'aloqa manzil telefon email xarita' },
 
         // O'qituvchilar
@@ -120,11 +119,13 @@
             return hay.includes(q);
         });
 
-        // Tasdiqlangan maqolalarni IndexedDB'dan qidirish
-        if (window.tdshuDB) {
-            try {
-                const articles = await window.tdshuDB.getArticles();
-                articles.filter(a => a.status === 'approved').forEach(a => {
+        // Tasdiqlangan maqolalarni backend'dan qidirish
+        const apiBase = window.TDSHU_API || 'http://localhost:5000';
+        try {
+            const res = await fetch(apiBase + '/api/articles');
+            if (res.ok) {
+                const articles = await res.json();
+                articles.forEach(a => {
                     const t = ((a.title || '') + ' ' + (a.author || '') + ' ' +
                                (a.description || '') + ' ' + (a.category || '') + ' ' +
                                (a.keywords || '')).toLowerCase();
@@ -138,8 +139,8 @@
                         });
                     }
                 });
-            } catch (e) { /* sukutda */ }
-        }
+            }
+        } catch (e) { /* sukutda */ }
 
         if (!results.length) {
             target.innerHTML = `

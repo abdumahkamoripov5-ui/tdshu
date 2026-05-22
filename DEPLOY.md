@@ -79,7 +79,7 @@ Endi URL: `https://tdshu-tarjima.netlify.app`
    - **Root Directory**: `backend`
    - **Runtime**: Python 3
    - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `gunicorn app:app --workers 2 --timeout 120`
+   - **Start Command**: `gunicorn app:app --workers 1 --timeout 120`
    - **Instance Type**: **Free**
 
 5. **Environment Variables** (pastda) — qo'shing:
@@ -87,7 +87,10 @@ Endi URL: `https://tdshu-tarjima.netlify.app`
    | Key | Value |
    |---|---|
    | `ADMIN_USERNAME` | `admin` (yoki o'zgartiring) |
-   | `ADMIN_PASSWORD` | kuchli parol yozing |
+   | `ADMIN_PASSWORD` | **kuchli parol yozing** (admin123 emas!) |
+   | `SECRET_KEY` | uzun tasodifiy satr — `python -c "import secrets;print(secrets.token_hex(32))"` |
+   | `ALLOWED_ORIGINS` | Netlify domeningiz, masalan `https://tdshu-tarjima.netlify.app` |
+   | `DEBUG` | `false` |
    | `SMTP_HOST` | `smtp.gmail.com` |
    | `SMTP_PORT` | `587` |
    | `SMTP_USER` | Gmail manzilingiz |
@@ -95,7 +98,15 @@ Endi URL: `https://tdshu-tarjima.netlify.app`
    | `SMTP_FROM` | Gmail manzilingiz |
    | `NOTIFY_EMAIL` | Murojaatlar keladigan email |
 
-6. **Create Web Service** ni bosing
+   > **Muhim:** `SECRET_KEY` ni belgilamasangiz, server har qayta ishga tushganda
+   > admin tizimdan chiqib ketadi. `ALLOWED_ORIGINS` ni o'z domeningizga
+   > cheklash boshqa saytlarning API'ngizdan foydalanishini to'sadi.
+
+6. **(Tavsiya) Doimiy disk** — `Disks` bo'limida disk qo'shing va `Mount Path`
+   ni `/opt/render/project/src/backend/data` (va alohida `.../uploads`) qiling.
+   Aks holda Render bepul tarifida har deploy'da maqolalar va fayllar o'chadi.
+
+7. **Create Web Service** ni bosing
 
 ~5 daqiqada backend ishga tushadi. URL: `https://tdshu-backend.onrender.com`
 
@@ -109,19 +120,18 @@ Endi URL: `https://tdshu-tarjima.netlify.app`
 ## 4-bosqich: Frontend'ni backend bilan bog'lash
 
 1. **Render'dan olingan backend URL**'ni nusxalang (masalan `https://tdshu-backend.onrender.com`)
-2. `js/script.js` faylini oching
-3. Quyidagi qatorni toping:
+2. `js/config.js` faylini oching (backend manzili FAQAT shu bitta faylda)
+3. Quyidagi qatorni toping va URL'ingizga o'zgartiring:
    ```js
-   : 'https://tdshu-backend.onrender.com'  // <-- Render'dagi backend URL'ingizni shu yerga yozing
+   var PROD_API = 'https://tdshu-backend.onrender.com';
    ```
-4. Render URL'ingizga o'zgartiring
-5. O'zgartirishni GitHub'ga yuboring:
+4. O'zgartirishni GitHub'ga yuboring:
    ```powershell
-   git add js/script.js
+   git add js/config.js
    git commit -m "Backend URL ni yangilash"
    git push
    ```
-6. Netlify avtomatik qayta deploy qiladi (~30 soniya)
+5. Netlify avtomatik qayta deploy qiladi (~30 soniya)
 
 ✅ **Endi to'liq ishlaydi!** Aloqa formasi email yuboradi.
 

@@ -653,8 +653,20 @@
 
         document.querySelectorAll('.flag').forEach(function(flag) {
             flag.style.cursor = 'pointer';
+            // Klaviatura va skrinrider uchun ochiq qilish
+            flag.setAttribute('role', 'button');
+            flag.setAttribute('tabindex', '0');
+            if (!flag.getAttribute('aria-label') && flag.getAttribute('alt')) {
+                flag.setAttribute('aria-label', flag.getAttribute('alt') + ' tili');
+            }
             flag.addEventListener('click', function() {
                 setLang(flagToLang(this));
+            });
+            flag.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setLang(flagToLang(this));
+                }
             });
         });
     }

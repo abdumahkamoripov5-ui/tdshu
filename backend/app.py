@@ -3,10 +3,14 @@ TDShU Backend — Flask + SQLite + SMTP email
 Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi
 """
 import os
+import time
+import json
+import hmac
+import base64
+import hashlib
 import sqlite3
 import secrets
 import smtplib
-import mimetypes
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -25,6 +29,14 @@ except ImportError:
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
+# Token imzolash kaliti. Belgilanmagan bo'lsa tasodifiy yaratiladi
+# (server qayta ishga tushganda admin qaytadan kirishi kerak bo'ladi).
+SECRET_KEY    = os.getenv("SECRET_KEY") or secrets.token_hex(32)
+TOKEN_TTL     = int(os.getenv("TOKEN_TTL_SECONDS", str(8 * 3600)))  # 8 soat
+
+# CORS: vergul bilan ajratilgan domenlar. "*" — hammaga ruxsat (faqat sinov uchun).
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").strip()
+
 SMTP_HOST     = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT     = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER     = os.getenv("SMTP_USER", "")
@@ -40,16 +52,28 @@ DB_PATH       = os.path.join(DATA_DIR, "tdshu.db")
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Maksimal so'rov hajmi: 200MB
-MAX_UPLOAD_MB = 200
+# Maksimal so'rov hajmi: 150MB (rasm 25MB + fayl 100MB + zaxira)
+MAX_UPLOAD_MB = 150
+
+# Ruxsat etilgan fayl turlari
+ALLOWED_PHOTO_EXT  = {"jpg", "jpeg", "png", "gif", "webp"}
+ALLOWED_ATTACH_EXT = {"pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "txt", "rtf"}
+
+# Login uchun rate-limit
+RATE_LIMIT_MAX    = 10          # bir oynada nechta urinish
+RATE_LIMIT_WINDOW = 300         # oyna (soniya) = 5 daqiqa
 
 # ===== FLASK =====
 app = Flask(__name__)
-CORS(app, expose_headers=["Content-Type", "Authorization"])
+if ALLOWED_ORIGINS == "*":
+    CORS(app)
+else:
+    origins = [o.strip() for o in ALLOWED_ORIGINS.split(",") if o.strip()]
+    CORS(app, origins=origins)
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 
-# Faol tokenlar (xotirada)
-TOKENS = set()
+# Login urinishlari (xotirada): ip -> [timestamp, ...]
+_login_attempts = {}
 
 
 # ===== DB =====
@@ -110,9 +134,53 @@ def now_iso():
     return datetime.utcnow().isoformat()
 
 
+# ----- Imzolangan (stateless) tokenlar -----
+def _b64e(b):
+    return base64.urlsafe_b64encode(b).decode().rstrip("=")
+
+
+def _b64d(s):
+    return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+
+
+def _sign(body):
+    return _b64e(hmac.new(SECRET_KEY.encode(), body.encode(), hashlib.sha256).digest())
+
+
+def make_token(username):
+    payload = {"u": username, "exp": int(time.time()) + TOKEN_TTL}
+    body = _b64e(json.dumps(payload, separators=(",", ":")).encode())
+    return f"{body}.{_sign(body)}"
+
+
+def verify_token(token):
+    if not token or "." not in token:
+        return False
+    body, _, sig = token.partition(".")
+    if not hmac.compare_digest(sig, _sign(body)):
+        return False
+    try:
+        payload = json.loads(_b64d(body))
+    except Exception:
+        return False
+    return int(payload.get("exp", 0)) > int(time.time())
+
+
 def require_token():
     token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
-    return token in TOKENS
+    return verify_token(token)
+
+
+# ----- Rate limit -----
+def is_rate_limited(ip):
+    now = time.time()
+    attempts = [t for t in _login_attempts.get(ip, []) if now - t < RATE_LIMIT_WINDOW]
+    _login_attempts[ip] = attempts
+    return len(attempts) >= RATE_LIMIT_MAX
+
+
+def record_attempt(ip):
+    _login_attempts.setdefault(ip, []).append(time.time())
 
 
 def row_to_dict(row, host_url):
@@ -129,16 +197,23 @@ def row_to_dict(row, host_url):
     return d
 
 
-def save_upload(file_storage, max_mb):
-    """Faylni saqlash. Hajm nazorat qilinadi."""
+def save_upload(file_storage, max_mb, allowed_ext):
+    """Faylni saqlash. Hajm va tur nazorat qilinadi.
+    Muvaffaqiyatda (storage_name, original_name), xatoda (None, xabar) qaytaradi."""
     if not file_storage or not file_storage.filename:
         return "", ""
+
+    fname = file_storage.filename
+    ext = fname.rsplit(".", 1)[-1].lower() if "." in fname else ""
+    if allowed_ext and ext not in allowed_ext:
+        return None, f"Ruxsat etilmagan fayl turi: .{ext}"
+
     file_storage.stream.seek(0, 2)
     size = file_storage.stream.tell()
     file_storage.stream.seek(0)
     if size > max_mb * 1024 * 1024:
         return None, f"Fayl hajmi {max_mb}MB dan oshmasligi kerak"
-    fname = file_storage.filename
+
     safe = secure_filename(fname) or "file"
     final_name = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}_{safe}"
     file_storage.save(os.path.join(UPLOAD_DIR, final_name))
@@ -175,18 +250,25 @@ def send_email(to_addr, subject, body, reply_to=None):
 # ===== AUTH =====
 @app.route("/api/auth/login", methods=["POST"])
 def auth_login():
+    ip = request.remote_addr or "unknown"
+    if is_rate_limited(ip):
+        return jsonify({"error": "Juda ko'p urinish. Birozdan keyin qayta urinib ko'ring."}), 429
+
     data = request.get_json(silent=True) or {}
-    if data.get("username") == ADMIN_USERNAME and data.get("password") == ADMIN_PASSWORD:
-        token = secrets.token_urlsafe(32)
-        TOKENS.add(token)
-        return jsonify({"token": token, "username": ADMIN_USERNAME})
+    username = data.get("username", "")
+    password = data.get("password", "")
+    user_ok = hmac.compare_digest(str(username), ADMIN_USERNAME)
+    pass_ok = hmac.compare_digest(str(password), ADMIN_PASSWORD)
+    if user_ok and pass_ok:
+        return jsonify({"token": make_token(ADMIN_USERNAME), "username": ADMIN_USERNAME})
+
+    record_attempt(ip)
     return jsonify({"error": "Login yoki parol noto'g'ri"}), 401
 
 
 @app.route("/api/auth/logout", methods=["POST"])
 def auth_logout():
-    token = request.headers.get("Authorization", "").replace("Bearer ", "").strip()
-    TOKENS.discard(token)
+    # Tokenlar stateless — chiqish mijoz tomonida tokenni o'chirish bilan amalga oshadi.
     return jsonify({"ok": True})
 
 
@@ -225,10 +307,10 @@ def get_article(aid):
 def submit_article():
     data = request.form
 
-    # Rasm (majburiy emas)
-    photo_path, _ = "", ""
+    # Rasm (ixtiyoriy)
+    photo_path = ""
     if "photo" in request.files:
-        result = save_upload(request.files["photo"], max_mb=50)
+        result = save_upload(request.files["photo"], max_mb=25, allowed_ext=ALLOWED_PHOTO_EXT)
         if result[0] is None:
             return jsonify({"error": result[1]}), 400
         photo_path, _ = result
@@ -236,10 +318,15 @@ def submit_article():
     # Qo'shimcha fayl (ixtiyoriy)
     attachment_path, attachment_name = "", ""
     if "attachment" in request.files:
-        result = save_upload(request.files["attachment"], max_mb=100)
+        result = save_upload(request.files["attachment"], max_mb=100, allowed_ext=ALLOWED_ATTACH_EXT)
         if result[0] is None:
             return jsonify({"error": result[1]}), 400
         attachment_path, attachment_name = result
+
+    title = data.get("title", "").strip()
+    author = data.get("fullName", "").strip()
+    if not (title and author):
+        return jsonify({"error": "Sarlavha va muallif ismi to'ldirilishi kerak"}), 400
 
     db = get_db()
     cur = db.execute("""
@@ -250,8 +337,8 @@ def submit_article():
              status, created_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending', ?)
     """, (
-        data.get("title", "").strip(),
-        data.get("fullName", "").strip(),
+        title,
+        author,
         data.get("position", "").strip(),
         data.get("department", "").strip(),
         data.get("subject", "").strip(),
@@ -272,10 +359,10 @@ def submit_article():
     if NOTIFY_EMAIL:
         send_email(
             NOTIFY_EMAIL,
-            f"Yangi maqola: {data.get('title', '')}",
+            f"Yangi maqola: {title}",
             f"Yangi maqola yuborildi va tasdiqlash kutilmoqda.\n\n"
-            f"Muallif: {data.get('fullName', '')}\n"
-            f"Sarlavha: {data.get('title', '')}\n"
+            f"Muallif: {author}\n"
+            f"Sarlavha: {title}\n"
             f"Kategoriya: {data.get('category', '')}\n"
             f"Email: {data.get('email', '')}\n"
             f"Telefon: {data.get('phone', '')}\n\n"
@@ -443,15 +530,49 @@ def health():
         "status": "ok",
         "time": now_iso(),
         "smtp_configured": bool(SMTP_USER and SMTP_PASSWORD),
-        "admin_user": ADMIN_USERNAME,
     })
 
 
+# ===== FRONTEND (statik sayt) =====
+# Backend frontend'ni ham serve qiladi: `python app.py` -> http://localhost:5000/
+FRONTEND_DIR = os.path.dirname(BASE_DIR)  # loyiha ildizi — index.html shu yerda
+
+
+@app.route("/")
+def serve_index():
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+# Bu papka/fayllar hech qachon serve qilinmaydi (maxfiy ma'lumotlar)
+_BLOCKED_TOP = {"backend", ".git", ".vscode", ".idea"}
+
+
+@app.route("/<path:path>")
+def serve_frontend(path):
+    """Statik fayllarni (HTML/CSS/JS/rasm) beradi. /api/* marshrutlari bu yerga tushmaydi."""
+    norm = path.replace("\\", "/").lstrip("/")
+    top = norm.split("/", 1)[0].lower()
+    # backend/ papkasi va yashirin fayllar (.env, .git, ...) — taqiqlangan
+    if top in _BLOCKED_TOP or top.startswith("."):
+        return send_from_directory(FRONTEND_DIR, "404.html"), 404
+    target = os.path.join(FRONTEND_DIR, norm)
+    if os.path.isfile(target):
+        return send_from_directory(FRONTEND_DIR, norm)
+    return send_from_directory(FRONTEND_DIR, "404.html"), 404
+
+
 if __name__ == "__main__":
+    debug = os.getenv("DEBUG", "false").lower() == "true"
+    port = int(os.getenv("PORT", "5000"))
     print("=" * 60)
-    print("  TDShU Backend ishga tushdi")
-    print(f"  Manzil: http://localhost:5000")
+    print("  TDShU ishga tushdi")
+    print(f"  Sayt:   http://localhost:{port}/")
+    print(f"  Admin:  http://localhost:{port}/admin-login.html")
+    print(f"  API:    http://localhost:{port}/api/")
     print(f"  SMTP:   {'sozlangan' if (SMTP_USER and SMTP_PASSWORD) else 'SOZLANMAGAN (email ishlamaydi)'}")
+    print(f"  CORS:   {ALLOWED_ORIGINS}")
     print(f"  DB:     {DB_PATH}")
+    if ADMIN_PASSWORD == "admin123":
+        print("  DIQQAT: standart parol ishlatilmoqda! ADMIN_PASSWORD ni o'zgartiring.")
     print("=" * 60)
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=debug)

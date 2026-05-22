@@ -646,12 +646,12 @@
                     </button>
                 </div>
 
-                <div style="background: #fff3cd; padding: 22px; border-radius: 10px; border-left: 4px solid #ffc107;">
-                    <h3 style="color: #856404; margin-bottom: 10px;">
-                        <i class="fas fa-exclamation-triangle"></i> Eslatma
+                <div style="background: #e8f5e9; padding: 22px; border-radius: 10px; border-left: 4px solid #28a745;">
+                    <h3 style="color: #1b5e20; margin-bottom: 10px;">
+                        <i class="fas fa-server"></i> Ma'lumotlar markaziy serverda
                     </h3>
-                    <p style="color: #856404;">
-                        Ushbu admin panel <strong>IndexedDB</strong> ishlatadi — barcha maqolalar va fayllar faqat sizning brauzeringizda saqlanadi (taxminan 1 GB hajmgacha). Ma'lumotlar bayroqsiz/portsiz <strong>bir xil URL</strong> (masalan <code>localhost:8080</code>) doirasida ko'rinadi; boshqa portda yoki <code>file://</code> dan ochsangiz, ma'lumotlar boshqa joyda saqlanib alohida ko'rinadi. Haqiqiy ishlab chiqarish uchun backend (Node.js, PHP yoki Python) va markaziy ma'lumotlar bazasi (MySQL, MongoDB) kerak.
+                    <p style="color: #1b5e20;">
+                        Barcha maqola va murojaatlar <strong>backend serverda</strong> saqlanadi — qaysi kompyuter yoki brauzerdan kirsangiz ham bir xil ma'lumotni ko'rasiz. Maqola yuborgan o'qituvchilar va saytdan kelgan murojaatlar shu panelda paydo bo'ladi. Render bepul tarifida diskni doimiy qilishni unutmang, aks holda har deploy'da ma'lumotlar o'chishi mumkin (qarang: <code>DEPLOY.md</code>).
                     </p>
                 </div>
             </div>
@@ -672,14 +672,40 @@
         </div>
     </div>
 
-    <script src="js/db.js"></script>
+    <script src="js/config.js"></script>
     <script>
     (function() {
+        // ============ API CONFIG ============
+        const API = window.TDSHU_API || 'http://localhost:5000';
+        const token = localStorage.getItem('adminToken');
+
         // ============ LOGIN GUARD ============
-        if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        if (!token) {
             window.location.href = 'admin-login.html';
             return;
         }
+
+        function authHeaders(extra) {
+            return Object.assign({ 'Authorization': 'Bearer ' + token }, extra || {});
+        }
+
+        async function apiFetch(path, opts) {
+            opts = opts || {};
+            opts.headers = authHeaders(opts.headers);
+            const res = await fetch(API + path, opts);
+            if (res.status === 401) {
+                localStorage.removeItem('adminToken');
+                window.location.href = 'admin-login.html';
+                throw new Error('unauthorized');
+            }
+            return res;
+        }
+
+        // Tokenni serverda tekshirish — yaroqsiz bo'lsa login sahifaga
+        apiFetch('/api/auth/check')
+            .then(r => r.json())
+            .then(d => { if (!d.valid) { localStorage.removeItem('adminToken'); window.location.href = 'admin-login.html'; } })
+            .catch(() => {});
 
         const username = localStorage.getItem('adminUsername') || 'admin';
         document.getElementById('adminName').textContent = username;
@@ -709,11 +735,28 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         };
 
-        // ============ LOAD & RENDER (async — IndexedDB) ============
+        // Backend maydon nomlarini render kodi kutgan ko'rinishga keltirish
+        function normalizeArticle(a) {
+            a.date = a.created_at ? String(a.created_at).split('T')[0] : (a.date || '');
+            a.photoURL = a.photo_url || '';
+            a.attachmentURL = a.attachment_url || '';
+            a.attachmentName = a.attachment_name || '';
+            return a;
+        }
+        function normalizeContact(c) {
+            c.date = c.created_at ? String(c.created_at).split('T')[0] : (c.date || '');
+            return c;
+        }
+
+        // ============ LOAD & RENDER (async — backend API) ============
         window.loadData = async function() {
             try {
-                _articles = await window.tdshuDB.getArticles();
-                _contacts = await window.tdshuDB.getContacts();
+                const [aRes, cRes] = await Promise.all([
+                    apiFetch('/api/articles'),
+                    apiFetch('/api/contacts')
+                ]);
+                _articles = (await aRes.json()).map(normalizeArticle);
+                _contacts = (await cRes.json()).map(normalizeContact);
             } catch (e) {
                 console.error('Yuklab bo\'lmadi:', e);
                 return;
@@ -873,29 +916,33 @@
             setStatusInternal(id, status, msg);
         };
         async function setStatusInternal(id, status, msg) {
-            const a = _articles.find(x => x.id === id);
-            if (!a) return;
-            a.status = status;
-            a.updatedAt = new Date().toISOString();
-            // photoURL / attachmentURL'larni saqlash oldidan tozalash (object URL'lar serializatsiyalanmaydi)
-            const toSave = Object.assign({}, a);
-            delete toSave.photoURL;
-            delete toSave.attachmentURL;
-            await window.tdshuDB.saveArticle(toSave);
+            try {
+                const res = await apiFetch('/api/articles/' + id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                if (!res.ok) throw new Error('xato');
+            } catch (e) {
+                toast('❌ Amalni bajarib bo\'lmadi');
+                return;
+            }
             await loadData();
             if (msg) toast(msg);
         }
 
         window.deleteArticle = async function(id) {
             if (!confirm('Maqolani butunlay o\'chirishni xohlaysizmi?')) return;
-            await window.tdshuDB.deleteArticle(id);
+            try { await apiFetch('/api/articles/' + id, { method: 'DELETE' }); }
+            catch (e) { toast('❌ O\'chirib bo\'lmadi'); return; }
             await loadData();
             toast('🗑️ Maqola o\'chirildi');
         };
 
         window.deleteContact = async function(id) {
             if (!confirm('Murojaatni o\'chirishni xohlaysizmi?')) return;
-            await window.tdshuDB.deleteContact(id);
+            try { await apiFetch('/api/contacts/' + id, { method: 'DELETE' }); }
+            catch (e) { toast('❌ O\'chirib bo\'lmadi'); return; }
             await loadData();
             toast('🗑️ Murojaat o\'chirildi');
         };
@@ -1011,32 +1058,44 @@
             if (e.key === 'Escape') closeModal();
         });
 
-        // ============ EXPORT / CLEAR (async) ============
-        window.exportData = async function() {
-            const data = await window.tdshuDB.exportJSON();
+        // ============ EXPORT / CLEAR ============
+        window.exportData = function() {
+            const data = {
+                exportedAt: new Date().toISOString(),
+                articles: _articles.map(a => {
+                    const c = Object.assign({}, a);
+                    delete c.photoURL; delete c.attachmentURL;
+                    return c;
+                }),
+                contacts: _contacts
+            };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'tdshu-backup-' + new Date().toISOString().split('T')[0] + '.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'tdshu-backup-' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             URL.revokeObjectURL(url);
-            toast('💾 Ma\'lumotlar yuklab olindi (fayllarsiz, faqat matn)');
+            toast('💾 Ma\'lumotlar yuklab olindi (matn, fayllarsiz)');
         };
 
         window.clearAllData = async function() {
-            if (!confirm('⚠️ DIQQAT! Barcha ma\'lumotlar o\'chiriladi. Davom etasizmi?')) return;
+            if (!confirm('⚠️ DIQQAT! Barcha maqola va murojaatlar serverdan o\'chiriladi. Davom etasizmi?')) return;
             if (!confirm('Rostdan ham hammasini o\'chirmoqchimisiz? Bu amalni qaytarib bo\'lmaydi.')) return;
-            await window.tdshuDB.clearAll();
+            try {
+                for (const a of _articles) { await apiFetch('/api/articles/' + a.id, { method: 'DELETE' }); }
+                for (const c of _contacts) { await apiFetch('/api/contacts/' + c.id, { method: 'DELETE' }); }
+            } catch (e) { toast('❌ O\'chirishda xato'); }
             await loadData();
             toast('🗑️ Barcha ma\'lumotlar o\'chirildi');
         };
 
         window.logout = function() {
             if (!confirm('Tizimdan chiqishni xohlaysizmi?')) return;
-            localStorage.removeItem('adminLoggedIn');
+            apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            localStorage.removeItem('adminToken');
             localStorage.removeItem('adminUsername');
             window.location.href = 'admin-login.html';
         };

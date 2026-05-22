@@ -104,11 +104,7 @@
             <p>Tizimga kirish</p>
         </div>
 
-        <div class="credentials-info">
-            <strong><i class="fas fa-info-circle"></i> Test kirish ma'lumotlari:</strong><br>
-            Login: <strong>admin</strong><br>
-            Parol: <strong>admin123</strong>
-        </div>
+        <div class="credentials-info" id="loginError" style="display:none; background:#fdecea; border-left-color:#dc3545; color:#a32018;"></div>
 
         <form onsubmit="loginAdmin(event)">
             <div class="input-group">
@@ -131,26 +127,60 @@
         </div>
     </div>
 
+    <script src="js/config.js"></script>
     <script>
-        function loginAdmin(event) {
-            event.preventDefault();
+        // Backend manzili js/config.js da belgilanadi
+        window.TDSHU_API = window.TDSHU_API || 'http://localhost:5000';
 
-            const username = document.getElementById('username').value;
+        function showError(msg) {
+            const box = document.getElementById('loginError');
+            box.textContent = msg;
+            box.style.display = 'block';
+        }
+
+        async function loginAdmin(event) {
+            event.preventDefault();
+            const btn = event.target.querySelector('button[type="submit"]');
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
 
-            if (username === 'admin' && password === 'admin123') {
-                localStorage.setItem('adminLoggedIn', 'true');
-                localStorage.setItem('adminUsername', username);
-                window.location.href = 'admin.html';
-            } else {
-                alert('❌ Login yoki parol noto\'g\'ri!\n\nLogin: admin\nParol: admin123');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Tekshirilmoqda...'; }
+
+            try {
+                const res = await fetch(window.TDSHU_API + '/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok && data.token) {
+                    localStorage.setItem('adminToken', data.token);
+                    localStorage.setItem('adminUsername', data.username || username);
+                    window.location.href = 'admin.html';
+                    return;
+                }
+                showError(data.error || 'Login yoki parol noto\'g\'ri.');
+            } catch (e) {
+                showError('Serverga ulanib bo\'lmadi. Backend ishga tushganini tekshiring.');
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Kirish'; }
             }
         }
 
-        // Agar oldindan login qilingan bo'lsa, to'g'ridan admin panelga
-        if (localStorage.getItem('adminLoggedIn') === 'true') {
-            window.location.href = 'admin.html';
-        }
+        // Agar amal qiluvchi token bo'lsa, to'g'ridan admin panelga
+        (async function () {
+            const token = localStorage.getItem('adminToken');
+            if (!token) return;
+            try {
+                const res = await fetch(window.TDSHU_API + '/api/auth/check', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json().catch(() => ({}));
+                if (data.valid) window.location.href = 'admin.html';
+                else localStorage.removeItem('adminToken');
+            } catch (e) { /* backend o'chiq bo'lsa shu sahifada qoladi */ }
+        })();
     </script>
 </body>
 </html>

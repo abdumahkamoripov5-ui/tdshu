@@ -68,10 +68,22 @@ backend/
 └── uploads/          # Yuklangan rasmlar va PDF (avtomatik)
 ```
 
+## Xavfsizlik sozlamalari (.env)
+
+- `SECRET_KEY` — tokenlarni imzolash kaliti. Belgilanmasa har restartda yangisi yaratiladi.
+- `ADMIN_PASSWORD` — standart `admin123` ni ALBATTA o'zgartiring.
+- `ALLOWED_ORIGINS` — API'ga ruxsat etilgan domenlar (vergul bilan). `*` — faqat sinov uchun.
+- `DEBUG` — production'da `false` (Werkzeug debugger RCE xavfini oldini oladi).
+- `TOKEN_TTL_SECONDS` — token amal qilish muddati (standart 8 soat).
+
 ## Eslatmalar
 
-- **Maqsimal fayl hajmi**: 200MB (kodda o'zgartirish mumkin: `MAX_UPLOAD_MB`)
-- **SQLite** — bitta fayl, alohida server kerak emas
-- **Tokenlar xotirada** — backend qayta ishga tushganda admin qaytadan kirishi kerak
-- **CORS** — barcha domenlardan ruxsat (production'da cheklash tavsiya)
-- Production uchun: nginx + gunicorn, JWT tokenlar, parol hashing kerak bo'ladi
+- **Maksimal fayl hajmi**: rasm 25MB, qo'shimcha fayl 100MB. Faqat ruxsat etilgan turlar
+  (rasm: jpg/png/..., fayl: pdf/doc/...) qabul qilinadi.
+- **SQLite** — bitta fayl, alohida server kerak emas. Render bepul tarifida diskni doimiy
+  qiling (qarang: `../DEPLOY.md`), aks holda har deploy'da ma'lumotlar o'chadi.
+- **Tokenlar imzolangan (stateless)** — HMAC-SHA256, muddati bor. `--workers 1` bilan
+  ishlaydi; rate-limit ham worker ichida hisoblanadi.
+- **Login rate-limit** — 5 daqiqada 10 urinishdan keyin 429 qaytaradi.
+- Yanada qattiqroq production uchun: parol hashing (bcrypt) va alohida ma'lumotlar bazasi
+  (PostgreSQL) tavsiya etiladi.
