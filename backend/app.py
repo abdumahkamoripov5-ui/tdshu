@@ -552,6 +552,9 @@ def serve_frontend(path):
     """Statik fayllarni (HTML/CSS/JS/rasm) beradi. /api/* marshrutlari bu yerga tushmaydi."""
     norm = path.replace("\\", "/").lstrip("/")
     top = norm.split("/", 1)[0].lower()
+    # Aniqlanmagan API yo'llari HTML emas, JSON 404 qaytarsin
+    if top == "api":
+        return jsonify({"error": "not found"}), 404
     # backend/ papkasi va yashirin fayllar (.env, .git, ...) — taqiqlangan
     if top in _BLOCKED_TOP or top.startswith("."):
         return send_from_directory(FRONTEND_DIR, "404.html"), 404
