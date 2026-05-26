@@ -1,6 +1,17 @@
 # TDShU Backend
 
-Flask + SQLite + SMTP backend. Maqolalarni, murojaatlarni saqlaydi va email yuboradi.
+Flask backend. Maqolalarni, murojaatlarni saqlaydi va email yuboradi.
+
+**Ikki rejimda ishlaydi (avtomatik tanlanadi):**
+
+| | Mahalliy (ishlab chiqish) | Production |
+|---|---|---|
+| **Baza** | SQLite (`data/tdshu.db`) | PostgreSQL — `DATABASE_URL` berilsa (Supabase) |
+| **Fayllar** | `uploads/` papka | Supabase Storage — `SUPABASE_URL` berilsa |
+
+`.env` da `DATABASE_URL`/`SUPABASE_URL` bo'sh bo'lsa mahalliy rejim ishlaydi —
+hech narsa sozlamasdan `python app.py` bilan sinab ko'rsa bo'ladi.
+Production sozlash uchun: [`../DEPLOY.md`](../DEPLOY.md) (3-bosqich: Supabase).
 
 ## Tezkor ishga tushirish
 
@@ -68,8 +79,14 @@ backend/
 └── uploads/          # Yuklangan rasmlar va PDF (avtomatik)
 ```
 
-## Xavfsizlik sozlamalari (.env)
+## Konfiguratsiya (.env) — to'liq ro'yxat namunasi `.env.example`'da
 
+**Ma'lumotlar bazasi va fayllar:**
+- `DATABASE_URL` — Supabase PostgreSQL ulanish satri (pooler). Bo'sh = mahalliy SQLite.
+- `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` — Supabase Storage. Bo'sh = mahalliy `uploads/`.
+- `SUPABASE_BUCKET` — Storage bucket nomi (standart `uploads`, public bo'lishi kerak).
+
+**Xavfsizlik:**
 - `SECRET_KEY` — tokenlarni imzolash kaliti. Belgilanmasa har restartda yangisi yaratiladi.
 - `ADMIN_PASSWORD` — standart `admin123` ni ALBATTA o'zgartiring.
 - `ALLOWED_ORIGINS` — API'ga ruxsat etilgan domenlar (vergul bilan). `*` — faqat sinov uchun.
@@ -80,8 +97,9 @@ backend/
 
 - **Maksimal fayl hajmi**: rasm 25MB, qo'shimcha fayl 100MB. Faqat ruxsat etilgan turlar
   (rasm: jpg/png/..., fayl: pdf/doc/...) qabul qilinadi.
-- **SQLite** — bitta fayl, alohida server kerak emas. Render bepul tarifida diskni doimiy
-  qiling (qarang: `../DEPLOY.md`), aks holda har deploy'da ma'lumotlar o'chadi.
+- **Baza** — mahalliy ishda SQLite (bitta fayl, sozlash shart emas). Production'da
+  `DATABASE_URL` orqali Supabase PostgreSQL ishlatiladi va deploy'da o'chmaydi
+  (qarang: `../DEPLOY.md`). Render Disk endi kerak emas.
 - **Tokenlar imzolangan (stateless)** — HMAC-SHA256, muddati bor. `--workers 1` bilan
   ishlaydi; rate-limit ham worker ichida hisoblanadi.
 - **Login rate-limit** — 5 daqiqada 10 urinishdan keyin 429 qaytaradi.

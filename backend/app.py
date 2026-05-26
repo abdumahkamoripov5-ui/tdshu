@@ -1,6 +1,14 @@
 """
-TDShU Backend — Flask + SQLite + SMTP email
+TDShU Backend — Flask + (PostgreSQL/Supabase yoki SQLite) + Supabase Storage + SMTP email
 Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi
+
+Ma'lumotlar bazasi:
+  - DATABASE_URL berilgan bo'lsa  -> PostgreSQL (Supabase) ishlatiladi
+  - berilmagan bo'lsa             -> mahalliy SQLite (faqat ishlab chiqish uchun)
+
+Fayllar (rasm/PDF):
+  - SUPABASE_URL + SUPABASE_SERVICE_KEY berilgan bo'lsa -> Supabase Storage
+  - berilmagan bo'lsa                                   -> mahalliy `uploads/` papka
 """
 import os
 import time
@@ -44,6 +52,17 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM     = os.getenv("SMTP_FROM", SMTP_USER)
 NOTIFY_EMAIL  = os.getenv("NOTIFY_EMAIL", SMTP_USER)
 
+# ----- Ma'lumotlar bazasi tanlovi -----
+# Supabase "Connection string" (Session yoki Transaction pooler tavsiya etiladi).
+DATABASE_URL  = (os.getenv("DATABASE_URL") or "").strip()
+USE_PG        = bool(DATABASE_URL)
+
+# ----- Supabase Storage tanlovi -----
+SUPABASE_URL         = (os.getenv("SUPABASE_URL") or "").strip().rstrip("/")
+SUPABASE_SERVICE_KEY = (os.getenv("SUPABASE_SERVICE_KEY") or "").strip()
+SUPABASE_BUCKET      = (os.getenv("SUPABASE_BUCKET") or "uploads").strip()
+USE_SUPABASE_STORAGE = bool(SUPABASE_URL and SUPABASE_SERVICE_KEY)
+
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR      = os.path.join(BASE_DIR, "data")
 UPLOAD_DIR    = os.path.join(BASE_DIR, "uploads")
@@ -51,6 +70,13 @@ DB_PATH       = os.path.join(DATA_DIR, "tdshu.db")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Tashqi kutubxonalar faqat kerak bo'lganda import qilinadi
+if USE_PG:
+    import psycopg2
+    import psycopg2.extras
+if USE_SUPABASE_STORAGE:
+    import requests
 
 # Maksimal so'rov hajmi: 150MB (rasm 25MB + fayl 100MB + zaxira)
 MAX_UPLOAD_MB = 150
@@ -76,54 +102,158 @@ app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 _login_attempts = {}
 
 
-# ===== DB =====
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+# ===== DB QATLAMI =====
+# Bitta yupqa qatlam ham PostgreSQL (Supabase), ham SQLite bilan ishlaydi.
+# Marshrutlar faqat shu metodlarni chaqiradi: all/one/run/insert.
+class Database:
+    def __init__(self):
+        if USE_PG:
+            self.conn = psycopg2.connect(DATABASE_URL)
+        else:
+            self.conn = sqlite3.connect(DB_PATH)
+            self.conn.row_factory = sqlite3.Row
+
+    def _cursor(self):
+        if USE_PG:
+            return self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        return self.conn.cursor()
+
+    @staticmethod
+    def _q(sql):
+        # SQLite "?" -> PostgreSQL "%s". So'rovlarda satr ichida "?" ishlatilmaydi.
+        return sql.replace("?", "%s") if USE_PG else sql
+
+    def all(self, sql, params=()):
+        cur = self._cursor()
+        cur.execute(self._q(sql), params)
+        rows = cur.fetchall()
+        cur.close()
+        return [dict(r) for r in rows]
+
+    def one(self, sql, params=()):
+        cur = self._cursor()
+        cur.execute(self._q(sql), params)
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+    def run(self, sql, params=()):
+        cur = self._cursor()
+        cur.execute(self._q(sql), params)
+        self.conn.commit()
+        n = cur.rowcount
+        cur.close()
+        return n
+
+    def insert(self, sql, params=()):
+        """INSERT bajaradi va yangi qatorning id sini qaytaradi."""
+        cur = self._cursor()
+        if USE_PG:
+            cur.execute(self._q(sql) + " RETURNING id", params)
+            new_id = cur.fetchone()["id"]
+        else:
+            cur.execute(self._q(sql), params)
+            new_id = cur.lastrowid
+        self.conn.commit()
+        cur.close()
+        return new_id
+
+    def close(self):
+        try:
+            self.conn.close()
+        except Exception:
+            pass
+
+
+SCHEMA_PG = """
+CREATE TABLE IF NOT EXISTS articles (
+    id              SERIAL PRIMARY KEY,
+    title           TEXT,
+    author          TEXT,
+    position        TEXT,
+    department      TEXT,
+    subject         TEXT,
+    category        TEXT,
+    keywords        TEXT,
+    email           TEXT,
+    phone           TEXT,
+    description     TEXT,
+    content         TEXT,
+    photo_path      TEXT,
+    attachment_path TEXT,
+    attachment_name TEXT,
+    status          TEXT DEFAULT 'pending',
+    created_at      TEXT,
+    updated_at      TEXT
+);
+
+CREATE TABLE IF NOT EXISTS contacts (
+    id          SERIAL PRIMARY KEY,
+    name        TEXT,
+    phone       TEXT,
+    email       TEXT,
+    type        TEXT,
+    subject     TEXT,
+    message     TEXT,
+    status      TEXT DEFAULT 'pending',
+    created_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status);
+CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts(status);
+"""
+
+SCHEMA_SQLITE = """
+CREATE TABLE IF NOT EXISTS articles (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    title           TEXT,
+    author          TEXT,
+    position        TEXT,
+    department      TEXT,
+    subject         TEXT,
+    category        TEXT,
+    keywords        TEXT,
+    email           TEXT,
+    phone           TEXT,
+    description     TEXT,
+    content         TEXT,
+    photo_path      TEXT,
+    attachment_path TEXT,
+    attachment_name TEXT,
+    status          TEXT DEFAULT 'pending',
+    created_at      TEXT,
+    updated_at      TEXT
+);
+
+CREATE TABLE IF NOT EXISTS contacts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT,
+    phone       TEXT,
+    email       TEXT,
+    type        TEXT,
+    subject     TEXT,
+    message     TEXT,
+    status      TEXT DEFAULT 'pending',
+    created_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status);
+CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts(status);
+"""
 
 
 def init_db():
-    conn = get_db()
-    conn.executescript("""
-    CREATE TABLE IF NOT EXISTS articles (
-        id              INTEGER PRIMARY KEY AUTOINCREMENT,
-        title           TEXT,
-        author          TEXT,
-        position        TEXT,
-        department      TEXT,
-        subject         TEXT,
-        category        TEXT,
-        keywords        TEXT,
-        email           TEXT,
-        phone           TEXT,
-        description     TEXT,
-        content         TEXT,
-        photo_path      TEXT,
-        attachment_path TEXT,
-        attachment_name TEXT,
-        status          TEXT DEFAULT 'pending',
-        created_at      TEXT,
-        updated_at      TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS contacts (
-        id          INTEGER PRIMARY KEY AUTOINCREMENT,
-        name        TEXT,
-        phone       TEXT,
-        email       TEXT,
-        type        TEXT,
-        subject     TEXT,
-        message     TEXT,
-        status      TEXT DEFAULT 'pending',
-        created_at  TEXT
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status);
-    CREATE INDEX IF NOT EXISTS idx_contacts_status ON contacts(status);
-    """)
-    conn.commit()
-    conn.close()
+    db = Database()
+    cur = db.conn.cursor()
+    if USE_PG:
+        cur.execute(SCHEMA_PG)          # psycopg2 bir nechta statementni bajara oladi
+    else:
+        cur.executescript(SCHEMA_SQLITE)
+    db.conn.commit()
+    cur.close()
+    db.close()
+    print(f"[db] {'PostgreSQL (Supabase)' if USE_PG else 'SQLite (mahalliy)'} tayyor")
+    print(f"[storage] {'Supabase Storage: ' + SUPABASE_BUCKET if USE_SUPABASE_STORAGE else 'mahalliy uploads/ papka'}")
 
 
 init_db()
@@ -183,22 +313,70 @@ def record_attempt(ip):
     _login_attempts.setdefault(ip, []).append(time.time())
 
 
+# ----- Fayl manzili (storage backendiga qarab) -----
+def file_url(path, host_url):
+    if not path:
+        return ""
+    if USE_SUPABASE_STORAGE:
+        return f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{path}"
+    return f"{host_url}api/uploads/{path}"
+
+
 def row_to_dict(row, host_url):
-    """SQLite Row -> dict, fayl yo'llarini to'liq URL qiladi."""
+    """DB qatori (dict) -> dict, fayl yo'llarini to'liq URL qiladi."""
     d = dict(row)
-    if d.get("photo_path"):
-        d["photo_url"] = f"{host_url}api/uploads/{d['photo_path']}"
-    else:
-        d["photo_url"] = ""
-    if d.get("attachment_path"):
-        d["attachment_url"] = f"{host_url}api/uploads/{d['attachment_path']}"
-    else:
-        d["attachment_url"] = ""
+    d["photo_url"] = file_url(d.get("photo_path"), host_url)
+    d["attachment_url"] = file_url(d.get("attachment_path"), host_url)
     return d
 
 
+# ----- Supabase Storage operatsiyalari -----
+def storage_upload(name, content, content_type):
+    """Faylni Supabase Storage'ga yuklaydi. Xatoda istisno (exception) ko'taradi."""
+    url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{name}"
+    resp = requests.post(
+        url,
+        data=content,
+        headers={
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+            "Content-Type": content_type or "application/octet-stream",
+            "x-upsert": "true",
+        },
+        timeout=120,
+    )
+    resp.raise_for_status()
+
+
+def storage_delete(name):
+    """Faylni Supabase Storage'dan o'chiradi (xatolar e'tiborsiz qoldiriladi)."""
+    if not name:
+        return
+    url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{name}"
+    try:
+        requests.delete(
+            url,
+            headers={"Authorization": f"Bearer {SUPABASE_SERVICE_KEY}"},
+            timeout=30,
+        )
+    except Exception as e:
+        print(f"[storage] delete failed for {name}: {e}")
+
+
+def delete_stored_file(path):
+    """Storage backendiga qarab faylni o'chiradi."""
+    if not path:
+        return
+    if USE_SUPABASE_STORAGE:
+        storage_delete(path)
+    else:
+        try:
+            os.remove(os.path.join(UPLOAD_DIR, path))
+        except OSError:
+            pass
+
+
 def save_upload(file_storage, max_mb, allowed_ext):
-    """Faylni saqlash. Hajm va tur nazorat qilinadi.
+    """Faylni saqlash (Supabase Storage yoki mahalliy disk). Hajm va tur nazorat qilinadi.
     Muvaffaqiyatda (storage_name, original_name), xatoda (None, xabar) qaytaradi."""
     if not file_storage or not file_storage.filename:
         return "", ""
@@ -208,15 +386,24 @@ def save_upload(file_storage, max_mb, allowed_ext):
     if allowed_ext and ext not in allowed_ext:
         return None, f"Ruxsat etilmagan fayl turi: .{ext}"
 
-    file_storage.stream.seek(0, 2)
-    size = file_storage.stream.tell()
     file_storage.stream.seek(0)
-    if size > max_mb * 1024 * 1024:
+    content = file_storage.stream.read()
+    if len(content) > max_mb * 1024 * 1024:
         return None, f"Fayl hajmi {max_mb}MB dan oshmasligi kerak"
 
     safe = secure_filename(fname) or "file"
     final_name = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{secrets.token_hex(4)}_{safe}"
-    file_storage.save(os.path.join(UPLOAD_DIR, final_name))
+
+    if USE_SUPABASE_STORAGE:
+        try:
+            storage_upload(final_name, content, file_storage.mimetype)
+        except Exception as e:
+            print(f"[storage] upload failed: {e}")
+            return None, "Faylni yuklashda xatolik yuz berdi"
+    else:
+        with open(os.path.join(UPLOAD_DIR, final_name), "wb") as f:
+            f.write(content)
+
     return final_name, fname  # storage_name, original_name
 
 
@@ -281,11 +468,11 @@ def auth_check():
 @app.route("/api/articles", methods=["GET"])
 def list_articles():
     is_admin = require_token()
-    db = get_db()
+    db = Database()
     if is_admin:
-        rows = db.execute("SELECT * FROM articles ORDER BY id DESC").fetchall()
+        rows = db.all("SELECT * FROM articles ORDER BY id DESC")
     else:
-        rows = db.execute("SELECT * FROM articles WHERE status='approved' ORDER BY id DESC").fetchall()
+        rows = db.all("SELECT * FROM articles WHERE status='approved' ORDER BY id DESC")
     db.close()
     return jsonify([row_to_dict(r, request.host_url) for r in rows])
 
@@ -293,8 +480,8 @@ def list_articles():
 @app.route("/api/articles/<int:aid>", methods=["GET"])
 def get_article(aid):
     is_admin = require_token()
-    db = get_db()
-    row = db.execute("SELECT * FROM articles WHERE id=?", (aid,)).fetchone()
+    db = Database()
+    row = db.one("SELECT * FROM articles WHERE id=?", (aid,))
     db.close()
     if not row:
         return jsonify({"error": "not found"}), 404
@@ -328,8 +515,8 @@ def submit_article():
     if not (title and author):
         return jsonify({"error": "Sarlavha va muallif ismi to'ldirilishi kerak"}), 400
 
-    db = get_db()
-    cur = db.execute("""
+    db = Database()
+    new_id = db.insert("""
         INSERT INTO articles
             (title, author, position, department, subject, category, keywords,
              email, phone, description, content,
@@ -351,8 +538,6 @@ def submit_article():
         photo_path, attachment_path, attachment_name,
         now_iso(),
     ))
-    new_id = cur.lastrowid
-    db.commit()
     db.close()
 
     # Admin'ga xabar yuborish
@@ -383,13 +568,12 @@ def update_article_status(aid):
     if new_status not in ("pending", "approved", "rejected"):
         return jsonify({"error": "invalid status"}), 400
 
-    db = get_db()
-    row = db.execute("SELECT email, author, title FROM articles WHERE id=?", (aid,)).fetchone()
+    db = Database()
+    row = db.one("SELECT email, author, title FROM articles WHERE id=?", (aid,))
     if not row:
         db.close()
         return jsonify({"error": "not found"}), 404
-    db.execute("UPDATE articles SET status=?, updated_at=? WHERE id=?", (new_status, now_iso(), aid))
-    db.commit()
+    db.run("UPDATE articles SET status=?, updated_at=? WHERE id=?", (new_status, now_iso(), aid))
     db.close()
 
     # Tasdiqlanganda muallifga email
@@ -419,17 +603,12 @@ def update_article_status(aid):
 def delete_article(aid):
     if not require_token():
         return jsonify({"error": "unauthorized"}), 401
-    db = get_db()
-    row = db.execute("SELECT photo_path, attachment_path FROM articles WHERE id=?", (aid,)).fetchone()
+    db = Database()
+    row = db.one("SELECT photo_path, attachment_path FROM articles WHERE id=?", (aid,))
     if row:
-        for p in (row["photo_path"], row["attachment_path"]):
-            if p:
-                try:
-                    os.remove(os.path.join(UPLOAD_DIR, p))
-                except OSError:
-                    pass
-    db.execute("DELETE FROM articles WHERE id=?", (aid,))
-    db.commit()
+        delete_stored_file(row.get("photo_path"))
+        delete_stored_file(row.get("attachment_path"))
+    db.run("DELETE FROM articles WHERE id=?", (aid,))
     db.close()
     return jsonify({"ok": True})
 
@@ -449,12 +628,11 @@ def submit_contact():
     if not (name and email and message):
         return jsonify({"error": "Ism, email va xabar to'ldirilishi kerak"}), 400
 
-    db = get_db()
-    db.execute("""
+    db = Database()
+    db.insert("""
         INSERT INTO contacts (name, phone, email, type, subject, message, status, created_at)
         VALUES (?,?,?,?,?,?, 'pending', ?)
     """, (name, phone, email, ctype, subject, message, now_iso()))
-    db.commit()
     db.close()
 
     # Admin'ga email yuborish
@@ -479,19 +657,18 @@ def submit_contact():
 def list_contacts():
     if not require_token():
         return jsonify({"error": "unauthorized"}), 401
-    db = get_db()
-    rows = db.execute("SELECT * FROM contacts ORDER BY id DESC").fetchall()
+    db = Database()
+    rows = db.all("SELECT * FROM contacts ORDER BY id DESC")
     db.close()
-    return jsonify([dict(r) for r in rows])
+    return jsonify(rows)
 
 
 @app.route("/api/contacts/<int:cid>", methods=["DELETE"])
 def delete_contact(cid):
     if not require_token():
         return jsonify({"error": "unauthorized"}), 401
-    db = get_db()
-    db.execute("DELETE FROM contacts WHERE id=?", (cid,))
-    db.commit()
+    db = Database()
+    db.run("DELETE FROM contacts WHERE id=?", (cid,))
     db.close()
     return jsonify({"ok": True})
 
@@ -507,8 +684,8 @@ def reply_contact(cid):
     if not body:
         return jsonify({"error": "Xabar matnini kiriting"}), 400
 
-    db = get_db()
-    row = db.execute("SELECT email, name FROM contacts WHERE id=?", (cid,)).fetchone()
+    db = Database()
+    row = db.one("SELECT email, name FROM contacts WHERE id=?", (cid,))
     db.close()
     if not row or not row["email"]:
         return jsonify({"error": "Email topilmadi"}), 404
@@ -517,9 +694,10 @@ def reply_contact(cid):
     return jsonify({"ok": ok})
 
 
-# ===== UPLOADS =====
+# ===== UPLOADS (faqat mahalliy rejim) =====
 @app.route("/api/uploads/<path:filename>")
 def serve_upload(filename):
+    # Supabase Storage rejimida fayllar to'g'ridan-to'g'ri Supabase'dan beriladi.
     return send_from_directory(UPLOAD_DIR, filename)
 
 
@@ -529,6 +707,8 @@ def health():
     return jsonify({
         "status": "ok",
         "time": now_iso(),
+        "database": "postgresql" if USE_PG else "sqlite",
+        "storage": "supabase" if USE_SUPABASE_STORAGE else "local",
         "smtp_configured": bool(SMTP_USER and SMTP_PASSWORD),
     })
 
@@ -567,15 +747,4 @@ def serve_frontend(path):
 if __name__ == "__main__":
     debug = os.getenv("DEBUG", "false").lower() == "true"
     port = int(os.getenv("PORT", "5000"))
-    print("=" * 60)
-    print("  TDShU ishga tushdi")
-    print(f"  Sayt:   http://localhost:{port}/")
-    print(f"  Admin:  http://localhost:{port}/admin-login.html")
-    print(f"  API:    http://localhost:{port}/api/")
-    print(f"  SMTP:   {'sozlangan' if (SMTP_USER and SMTP_PASSWORD) else 'SOZLANMAGAN (email ishlamaydi)'}")
-    print(f"  CORS:   {ALLOWED_ORIGINS}")
-    print(f"  DB:     {DB_PATH}")
-    if ADMIN_PASSWORD == "admin123":
-        print("  DIQQAT: standart parol ishlatilmoqda! ADMIN_PASSWORD ni o'zgartiring.")
-    print("=" * 60)
     app.run(host="0.0.0.0", port=port, debug=debug)

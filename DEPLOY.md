@@ -1,6 +1,6 @@
 # Saytni internetga chiqarish bo'yicha qo'llanma
 
-Sayt 2 qismdan iborat: **Frontend** (statik HTML/CSS/JS) va **Backend** (Flask). Ikkalasi alohida deploy qilinadi.
+Sayt 3 qismdan iborat: **Frontend** (statik HTML/CSS/JS), **Backend** (Flask) va **Supabase** (ma'lumotlar bazasi + fayllar). Har biri alohida deploy qilinadi.
 
 ## Umumiy reja
 
@@ -9,7 +9,12 @@ Sayt 2 qismdan iborat: **Frontend** (statik HTML/CSS/JS) va **Backend** (Flask).
 | **Kod** | GitHub | Bepul |
 | **Frontend** | Netlify (`tdshu.netlify.app`) | Bepul |
 | **Backend** | Render (`tdshu-backend.onrender.com`) | Bepul (uxlab qoladi) |
+| **Baza + fayllar** | Supabase (PostgreSQL + Storage) | Bepul |
 | **Domen** (keyin) | `.uz` yoki `.com` | ~$10–25/yil |
+
+> **Nega Supabase?** Render bepul tarifida disk har deploy'da o'chadi — maqolalar
+> yo'qolardi. Supabase doimiy PostgreSQL bazasi va fayl ombori (Storage) beradi,
+> avtomatik backup bilan. 1000+ foydalanuvchiga bemalol yetadi.
 
 ---
 
@@ -69,7 +74,45 @@ Endi URL: `https://tdshu-tarjima.netlify.app`
 
 ---
 
-## 3-bosqich: Backend — Render
+## 3-bosqich: Supabase — ma'lumotlar bazasi va fayllar
+
+Backend'ni Render'ga qo'yishdan **oldin** Supabase'ni tayyorlang.
+
+### A) Loyiha yarating
+1. https://supabase.com → **Start your project** → GitHub bilan kiring
+2. **New project** → nom: `tdshu`, kuchli **Database Password** o'ylab toping (saqlab qo'ying!)
+3. Region: `Central EU (Frankfurt)` (O'zbekistonga eng yaqini) → **Create new project**
+4. ~2 daqiqada baza tayyor bo'ladi
+
+### B) Ulanish satrini (DATABASE_URL) oling
+1. Yuqori o'ngdagi **Connect** tugmasini bosing
+2. **Connection string → Transaction pooler** (yoki **Session pooler**) ni tanlang
+3. Ko'rinadigan satrni nusxalang, masalan:
+   ```
+   postgresql://postgres.abcdxyz:[YOUR-PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+   ```
+4. `[YOUR-PASSWORD]` o'rniga A-bosqichda o'ylab topgan parolingizni yozing.
+   Bu — Render'ga qo'yiladigan `DATABASE_URL`. Jadvallarni backend o'zi yaratadi.
+
+> **Pooler** satrini ishlating (port 6543/5432), to'g'ridan-to'g'ri ulanish emas —
+> bepul tarifda ulanishlar soni cheklangan, pooler buni hal qiladi.
+
+### C) Fayllar uchun Storage bucket yarating
+1. Chap menyuda **Storage → New bucket**
+2. Nom: `uploads`, **Public bucket** ni YOQING (rasmlar saytda ko'rinishi uchun)
+3. **Create bucket**
+
+### D) API kalitlarini oling
+**Project Settings → API** sahifasida:
+- **Project URL** → `SUPABASE_URL` (masalan `https://abcdxyz.supabase.co`)
+- **service_role** kaliti → `SUPABASE_SERVICE_KEY`
+
+> ⚠️ `service_role` kaliti — MAXFIY. Faqat Render'da (backend) saqlang,
+> hech qachon frontend kodiga yoki GitHub'ga qo'ymang.
+
+---
+
+## 4-bosqich: Backend — Render
 
 1. https://render.com → **Sign up with GitHub**
 2. **New + → Web Service**
@@ -86,6 +129,10 @@ Endi URL: `https://tdshu-tarjima.netlify.app`
 
    | Key | Value |
    |---|---|
+   | `DATABASE_URL` | Supabase **pooler** ulanish satri (3-bosqich B) |
+   | `SUPABASE_URL` | Supabase **Project URL** (3-bosqich D) |
+   | `SUPABASE_SERVICE_KEY` | Supabase **service_role** kaliti (3-bosqich D) |
+   | `SUPABASE_BUCKET` | `uploads` |
    | `ADMIN_USERNAME` | `admin` (yoki o'zgartiring) |
    | `ADMIN_PASSWORD` | **kuchli parol yozing** (admin123 emas!) |
    | `SECRET_KEY` | uzun tasodifiy satr — `python -c "import secrets;print(secrets.token_hex(32))"` |
@@ -102,11 +149,11 @@ Endi URL: `https://tdshu-tarjima.netlify.app`
    > admin tizimdan chiqib ketadi. `ALLOWED_ORIGINS` ni o'z domeningizga
    > cheklash boshqa saytlarning API'ngizdan foydalanishini to'sadi.
 
-6. **(Tavsiya) Doimiy disk** — `Disks` bo'limida disk qo'shing va `Mount Path`
-   ni `/opt/render/project/src/backend/data` (va alohida `.../uploads`) qiling.
-   Aks holda Render bepul tarifida har deploy'da maqolalar va fayllar o'chadi.
+   > **Eslatma:** `DATABASE_URL` va `SUPABASE_URL` belgilangani uchun backend
+   > avtomatik Supabase'ni ishlatadi. Doimiy disk (Render Disk) **kerak emas** —
+   > maqolalar bazada, fayllar Supabase Storage'da saqlanadi va deploy'da o'chmaydi.
 
-7. **Create Web Service** ni bosing
+6. **Create Web Service** ni bosing
 
 ~5 daqiqada backend ishga tushadi. URL: `https://tdshu-backend.onrender.com`
 
@@ -117,7 +164,7 @@ Endi URL: `https://tdshu-tarjima.netlify.app`
 
 ---
 
-## 4-bosqich: Frontend'ni backend bilan bog'lash
+## 5-bosqich: Frontend'ni backend bilan bog'lash
 
 1. **Render'dan olingan backend URL**'ni nusxalang (masalan `https://tdshu-backend.onrender.com`)
 2. `js/config.js` faylini oching (backend manzili FAQAT shu bitta faylda)
@@ -137,7 +184,7 @@ Endi URL: `https://tdshu-tarjima.netlify.app`
 
 ---
 
-## 5-bosqich (ixtiyoriy): O'z domeningiz
+## 6-bosqich (ixtiyoriy): O'z domeningiz
 
 ### Variantlar:
 - **`.uz`** domen — `Cctld.uz` (~$20/yil), `saytim.uz` (~$25/yil) — mahalliy obro'
@@ -164,10 +211,14 @@ Bepul tariflarda yiliga $0 (faqat domen olsangiz $10–25/yil).
 Netlify bepul tarifi oyiga 100GB trafik beradi. Bu kuniga ~10 000 tashrif. Render bepul tarif oyiga 750 soat. Yetarli.
 
 **Ma'lumotlar bazasi yo'qoladimi?**
-Render bepul tarifda fayllar saqlanmaydi (har deploy'da o'chadi). Buning uchun:
-- Render'ning **PostgreSQL** bepul bazasiga o'tish, yoki
-- Mahalliyda muhim ma'lumotlarni admin orqali eksport qilish (JSON)
-- Yoki har oyda backup olib turish
+Yo'q. Maqolalar va murojaatlar **Supabase PostgreSQL** bazasida, fayllar (rasm/PDF)
+**Supabase Storage**'da saqlanadi — Render deploy qilinganda ham o'chmaydi.
+Supabase avtomatik kunlik backup ham oladi. (Render Disk endi kerak emas.)
+
+**Supabase bepul tarifi yetadimi?**
+Ha. Bepul tarifda 500MB baza + 1GB fayl ombori bor — bu minglab maqolaga yetadi.
+Yagona shart: baza 7 kun ishlatilmasa "pauza"ga o'tadi (bir tugma bilan qayta yoqiladi);
+sayt doim ishlatilgani uchun bu muammo bo'lmaydi.
 
 **Yangiliklar va galereya ishlaydimi?**
 Ha, ular tashqi servislardan oladi (kun.uz, Wikimedia, tsuos.uz). Internet ulansa yetadi.
