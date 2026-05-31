@@ -339,11 +339,14 @@ def storage_upload(name, content, content_type):
         data=content,
         headers={
             "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+            "apikey": SUPABASE_SERVICE_KEY,
             "Content-Type": content_type or "application/octet-stream",
             "x-upsert": "true",
         },
         timeout=120,
     )
+    if not resp.ok:
+        print(f"[storage] {resp.status_code} body: {resp.text[:500]}")
     resp.raise_for_status()
 
 
