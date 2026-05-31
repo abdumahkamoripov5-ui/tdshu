@@ -1395,3 +1395,107 @@ footer {
         padding: 30px 20px;
     }
 }
+
+/* ============================================
+   TELEFON UCHUN MOSLASHTIRISH (yaxshilangan)
+   ============================================ */
+
+/* Hamburger tugmasi — JS qo'shadi, telefonda ko'rinadi */
+.nav-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 14px 18px;
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+}
+.nav-toggle:focus { outline: 2px solid var(--accent-blue); outline-offset: -4px; }
+
+/* Tablet (<= 992px) */
+@media (max-width: 992px) {
+    .logo-text { font-size: 15px; max-width: 240px; }
+}
+
+/* Telefon (<= 768px) — hamburger menyu va yig'iq top bar */
+@media (max-width: 768px) {
+    .top-bar { padding: 10px 0; }
+    .top-bar-content {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        text-align: left;
+    }
+    .logo-section { gap: 10px; flex: 1; min-width: 0; }
+    .logo-section img { width: 48px !important; height: 48px !important; flex-shrink: 0; }
+    .logo-text { font-size: 12px; max-width: none; line-height: 1.25; }
+    .contact-info { display: none; }
+    .language-flags { gap: 5px; flex-shrink: 0; }
+    .flag { width: 26px; height: 19px; }
+
+    .nav-toggle { display: block; }
+    .nav-container {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+    }
+    .nav-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        background: var(--primary-blue);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+        z-index: 99;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+    }
+    .nav-menu.open { display: flex; }
+    .nav-menu li { width: 100%; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+    .nav-menu li:last-child { border-bottom: none; }
+    .nav-menu a {
+        padding: 16px 22px;
+        font-size: 14px;
+        text-align: left;
+    }
+    .search-icon { padding: 14px 18px; font-size: 18px; }
+
+    .hero { height: 420px; }
+    .hero-content h1 { font-size: 26px; line-height: 1.3; }
+    .hero-content p { font-size: 15px; }
+    .section { padding: 45px 0; }
+    .section-title h2 { font-size: 26px; }
+    .section-title p { font-size: 14px; }
+    .about-text h3 { font-size: 22px; }
+    .stat-card h3 { font-size: 36px; }
+    .footer-section h4 { font-size: 16px; }
+    .footer-bottom p { font-size: 13px; line-height: 1.5; }
+}
+
+/* Kichik telefon (<= 480px) */
+@media (max-width: 480px) {
+    .container { padding: 0 15px; }
+    .logo-section img { width: 42px !important; height: 42px !important; }
+    .logo-text { font-size: 11px; }
+    .hero { height: 360px; }
+    .hero-content h1 { font-size: 22px; }
+    .hero-content p { font-size: 13px; }
+    .section { padding: 35px 0; }
+    .section-title h2 { font-size: 22px; }
+    .btn { padding: 10px 22px; font-size: 13px; }
+    .form-container { padding: 25px 18px; }
+    .faculty-card { padding: 20px !important; }
+    .stat-card { padding: 25px 15px; }
+    .stat-card h3 { font-size: 32px; }
+    .footer-bottom p { font-size: 12px; }
+    .social-links a { width: 38px; height: 38px; font-size: 16px; }
+}

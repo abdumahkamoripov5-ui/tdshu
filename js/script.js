@@ -411,4 +411,49 @@ document.querySelectorAll('.footer-bottom p').forEach(function(p) {
 // Tasdiqlangan maqolalarni yuklash
 loadApprovedArticles();
 
+// ============================================
+// Telefon — hamburger menyu
+// ============================================
+(function () {
+    var navContainer = document.querySelector('.main-nav .nav-container');
+    var navMenu = document.querySelector('.main-nav .nav-menu');
+    if (!navContainer || !navMenu) return;
+
+    var btn = document.createElement('button');
+    btn.className = 'nav-toggle';
+    btn.setAttribute('aria-label', 'Menyu');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = '<i class="fas fa-bars"></i>';
+    navContainer.insertBefore(btn, navContainer.firstChild);
+
+    function setOpen(open) {
+        navMenu.classList.toggle('open', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.innerHTML = open ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+    }
+
+    btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setOpen(!navMenu.classList.contains('open'));
+    });
+
+    navMenu.querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', function () { setOpen(false); });
+    });
+
+    document.addEventListener('click', function (e) {
+        if (navMenu.classList.contains('open') &&
+            !navMenu.contains(e.target) &&
+            !btn.contains(e.target)) {
+            setOpen(false);
+        }
+    });
+
+    window.addEventListener('resize', function () {
+        if (window.innerWidth > 768 && navMenu.classList.contains('open')) {
+            setOpen(false);
+        }
+    });
+})();
+
 console.log('%c🎓 Tarjimashunoslik, tilshunoslik va xalqaro jurnalistika oliy maktabi', 'color: #1e4d8b; font-size: 20px; font-weight: bold;');
